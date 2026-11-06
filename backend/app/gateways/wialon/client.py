@@ -4,8 +4,14 @@ from typing import Any
 import httpx
 
 from app.gateways.wialon.dto import (
+    WialonBindingEvent,
+    WialonDriver,
+    WialonPassenger,
+    WialonResource,
     WialonUnit,
+    WialonUnitDriver,
     WialonUnitSearchResult,
+    resource_from_wialon,
     unit_from_wialon,
 )
 from app.gateways.wialon.exceptions import (
@@ -21,6 +27,11 @@ class WialonClient:
 
     # 1: base unit fields; 1024: last message and last known location.
     UNIT_FLAGS = 1025
+    RESOURCE_BASE_FLAGS = 1
+    RESOURCE_DRIVER_FLAGS = RESOURCE_BASE_FLAGS + 256
+    RESOURCE_PASSENGER_FLAGS = RESOURCE_BASE_FLAGS + 2_097_152
+    RESOURCE_DRIVER_AUTO_FLAGS = RESOURCE_DRIVER_FLAGS + 16_384
+    RESOURCE_PASSENGER_AUTO_FLAGS = RESOURCE_PASSENGER_FLAGS + 4_194_304
 
     def __init__(
         self,
@@ -128,3 +139,327 @@ class WialonClient:
                 "El servicio de telemetría devolvió una unidad en formato inválido."
             )
         return unit_from_wialon(item)
+
+    def get_resource(self, resource_id: int, flags: int) -> WialonResource | None:
+        body = self._request(
+            "core/search_item", {"id": resource_id, "flags": flags}
+        )
+        item = body.get("item") if isinstance(body, dict) else None
+        if not isinstance(item, dict):
+            raise WialonConnectionError(
+                "El servicio de telemetría devolvió un recurso en formato inválido."
+            )
+        return resource_from_wialon(item)
+
+    def list_drivers(
+        self, resource_id: int, query: str | None, offset: int, limit: int
+    ) -> tuple[list[WialonDriver], int]:
+        resource = self.get_resource(resource_id, self.RESOURCE_DRIVER_FLAGS)
+        if resource is None:
+            return [], 0
+        drivers = sorted(resource.drivers, key=lambda driver: driver.name.casefold())
+        if query:
+            needle = query.casefold()
+            drivers = [
+                driver for driver in drivers
+                if needle in driver.name.casefold()
+                or needle in driver.code.casefold()
+                or needle in driver.phone.casefold()
+            ]
+        return drivers[offset : offset + limit], len(drivers)
+
+    def get_driver(self, resource_id: int, driver_id: int) -> WialonDriver | None:
+        resource = self.get_resource(resource_id, self.RESOURCE_DRIVER_FLAGS)
+        if resource is None:
+            return None
+        return next((item for item in resource.drivers if item.id == driver_id), None)
+
+    def create_driver(
+        self,
+        resource_id: int,
+        *,
+        name: str,
+        code: str,
+        description: str,
+        phone: str,
+        mobile_password: str,
+        custom_fields: dict[str, str],
+    ) -> WialonDriver:
+        body = self._request(
+            "resource/update_driver",
+            {
+                "itemId": resource_id,
+                "id": 0,
+                "callMode": "create",
+                "n": name,
+                "c": code,
+                "ds": description,
+                "p": phone,
+                "pwd": mobile_password,
+                "jp": custom_fields,
+                "f": 0,
+            },
+        )
+        return self._driver_from_update(body)
+
+    def update_driver(
+        self,
+        resource_id: int,
+        driver_id: int,
+        *,
+        name: str,
+        code: str,
+        description: str,
+        phone: str,
+        mobile_password: str,
+        custom_fields: dict[str, str] | None = None,
+        flags: int = 0,
+    ) -> WialonDriver:
+        params: dict[str, Any] = {
+            "itemId": resource_id,
+            "id": driver_id,
+            "callMode": "update",
+            "n": name,
+            "c": code,
+            "ds": description,
+            "p": phone,
+            "pwd": mobile_password,
+            "f": flags,
+        }
+        if custom_fields is not None:
+            params["jp"] = custom_fields
+        return self._driver_from_update(self._request("resource/update_driver", params))
+
+    def delete_driver(self, resource_id: int, driver_id: int) -> None:
+        self._request(
+            "resource/update_driver",
+            {"itemId": resource_id, "id": driver_id, "callMode": "delete"},
+        )
+
+    @staticmethod
+    def _driver_from_update(body: Any) -> WialonDriver:
+        if (
+            not isinstance(body, list)
+            or len(body) < 2
+            or not isinstance(body[1], dict)
+        ):
+            raise WialonConnectionError(
+                "El servicio de telemetría devolvió un conductor en formato inválido."
+            )
+        resource = resource_from_wialon(
+            {"id": 1, "nm": "", "drvrs": {str(body[1].get("id", "")): body[1]}}
+        )
+        if resource is None or not resource.drivers:
+            raise WialonConnectionError(
+                "El servicio de telemetría devolvió un conductor en formato inválido."
+            )
+        return resource.drivers[0]
+
+    def list_passengers(
+        self, resource_id: int, query: str | None, offset: int, limit: int
+    ) -> tuple[list[WialonPassenger], int]:
+        resource = self.get_resource(resource_id, self.RESOURCE_PASSENGER_FLAGS)
+        if resource is None:
+            return [], 0
+        passengers = sorted(resource.passengers, key=lambda item: item.name.casefold())
+        if query:
+            needle = query.casefold()
+            passengers = [
+                item for item in passengers
+                if needle in item.name.casefold() or needle in item.code.casefold()
+            ]
+        return passengers[offset : offset + limit], len(passengers)
+
+    def get_passenger(self, resource_id: int, passenger_id: int) -> WialonPassenger | None:
+        resource = self.get_resource(resource_id, self.RESOURCE_PASSENGER_FLAGS)
+        if resource is None:
+            return None
+        return next((item for item in resource.passengers if item.id == passenger_id), None)
+
+    def create_passenger(
+        self,
+        resource_id: int,
+        *,
+        name: str,
+        code: str,
+        phone: str,
+        timezone: int,
+        custom_fields: dict[str, str],
+        image_checksum: int = 0,
+    ) -> WialonPassenger:
+        body = self._request(
+            "resource/update_tag",
+            {
+                "itemId": resource_id,
+                "id": 0,
+                "callMode": "create",
+                "n": name,
+                "c": code,
+                "p": phone,
+                "tz": timezone,
+                "ck": image_checksum,
+                "jp": custom_fields,
+            },
+        )
+        return self._passenger_from_update(body)
+
+    def update_passenger(
+        self,
+        resource_id: int,
+        passenger_id: int,
+        *,
+        name: str,
+        code: str,
+        phone: str,
+        timezone: int,
+        custom_fields: dict[str, str],
+        image_checksum: int,
+        flags: int,
+        auto_reset_seconds: int,
+    ) -> WialonPassenger:
+        body = self._request(
+            "resource/update_tag",
+            {
+                "itemId": resource_id,
+                "id": passenger_id,
+                "callMode": "update",
+                "n": name,
+                "c": code,
+                "p": phone,
+                "tz": timezone,
+                "ck": image_checksum,
+                "f": flags,
+                "art": auto_reset_seconds,
+                "jp": custom_fields,
+            },
+        )
+        return self._passenger_from_update(body)
+
+    def delete_passenger(self, resource_id: int, passenger_id: int) -> None:
+        self._request(
+            "resource/update_tag",
+            {"itemId": resource_id, "id": passenger_id, "callMode": "delete"},
+        )
+
+    @staticmethod
+    def _passenger_from_update(body: Any) -> WialonPassenger:
+        if (
+            not isinstance(body, list)
+            or len(body) < 2
+            or not isinstance(body[1], dict)
+        ):
+            raise WialonConnectionError(
+                "El servicio de telemetría devolvió un pasajero en formato inválido."
+            )
+        passenger = body[1]
+        resource = resource_from_wialon(
+            {"id": 1, "nm": "", "tags": {str(passenger.get("id", "")): passenger}}
+        )
+        if resource is None or not resource.passengers:
+            raise WialonConnectionError(
+                "El servicio de telemetría devolvió un pasajero en formato inválido."
+            )
+        return resource.passengers[0]
+
+    def get_unit_drivers(self, unit_id: int, resource_id: int) -> list[WialonUnitDriver]:
+        body = self._request("resource/get_unit_drivers", {"unitId": unit_id})
+        records = body.get(str(resource_id), []) if isinstance(body, dict) else []
+        if not isinstance(records, list):
+            raise WialonConnectionError("Respuesta inválida al consultar conductores vinculados.")
+        result = []
+        for record in records:
+            if not isinstance(record, dict):
+                continue
+            try:
+                driver_id = int(record.get("id"))
+            except (TypeError, ValueError):
+                continue
+            result.append(WialonUnitDriver(
+                id=driver_id,
+                name=record.get("nm") if isinstance(record.get("nm"), str) else "",
+                phone=record.get("ph") if isinstance(record.get("ph"), str) else None,
+            ))
+        return result
+
+    def bind_driver(self, resource_id: int, driver_id: int, unit_id: int, *, bind: bool, time: int = 0) -> None:
+        self._request("resource/bind_unit_driver", {
+            "resourceId": resource_id, "driverId": driver_id,
+            "unitId": unit_id, "time": time, "mode": 1 if bind else 0,
+        })
+
+    def get_driver_bindings(
+        self, resource_id: int, *, unit_id: int, driver_id: int,
+        time_from: int, time_to: int,
+    ) -> list[WialonBindingEvent]:
+        body = self._request("resource/get_driver_bindings", {
+            "resourceId": resource_id, "unitId": unit_id, "driverId": driver_id,
+            "timeFrom": time_from, "timeTo": time_to,
+        })
+        return self._binding_events(body)
+
+    def set_driver_auto_units(self, resource_id: int, unit_ids: list[int]) -> list[int]:
+        body = self._request("resource/update_driver_units", {
+            "itemId": resource_id, "units": unit_ids,
+        })
+        units = body.get("drvrun") if isinstance(body, dict) else None
+        if not isinstance(units, list):
+            raise WialonConnectionError("Respuesta inválida al actualizar asignación automática.")
+        return [int(unit_id) for unit_id in units if isinstance(unit_id, int) and not isinstance(unit_id, bool)]
+
+    def get_driver_auto_units(self, resource_id: int) -> tuple[bool, list[int]]:
+        resource = self.get_resource(resource_id, self.RESOURCE_DRIVER_AUTO_FLAGS)
+        if resource is None:
+            return False, []
+        return "drvrun" in resource.available_fields, list(resource.driver_auto_unit_ids)
+
+    def get_unit_passengers(self, unit_id: int, resource_id: int) -> list[WialonPassenger]:
+        resource = self.get_resource(resource_id, self.RESOURCE_PASSENGER_FLAGS)
+        if resource is None:
+            return []
+        return [item for item in resource.passengers if item.bound_unit_id == unit_id]
+
+    def bind_passenger(self, resource_id: int, passenger_id: int, unit_id: int, *, bind: bool, time: int = 0) -> None:
+        self._request("resource/bind_unit_tag", {
+            "resourceId": resource_id, "tagId": passenger_id,
+            "unitId": unit_id, "time": time, "mode": 1 if bind else 0,
+        })
+
+    def get_passenger_bindings(
+        self, resource_id: int, *, unit_id: int, passenger_id: int,
+        time_from: int, time_to: int,
+    ) -> list[WialonBindingEvent]:
+        body = self._request("resource/get_tag_bindings", {
+            "resourceId": resource_id, "unitId": unit_id, "tagId": passenger_id,
+            "timeFrom": time_from, "timeTo": time_to,
+        })
+        return self._binding_events(body, tag=True)
+
+    @staticmethod
+    def _binding_events(body: Any, *, tag: bool = False) -> list[WialonBindingEvent]:
+        if not isinstance(body, dict):
+            raise WialonConnectionError("Respuesta inválida al consultar vinculaciones.")
+        events = []
+        for subject_key, records in body.items():
+            try:
+                subject_id = int(subject_key)
+            except (TypeError, ValueError):
+                continue
+            if not isinstance(records, list):
+                continue
+            for record in records:
+                if not isinstance(record, dict):
+                    continue
+                timestamp = record.get("t")
+                unit_id = record.get("u")
+                if not isinstance(timestamp, int) or isinstance(timestamp, bool):
+                    continue
+                if not isinstance(unit_id, int) or isinstance(unit_id, bool):
+                    continue
+                previous = record.get("pu") if tag else None
+                events.append(WialonBindingEvent(
+                    timestamp=timestamp,
+                    unit_id=unit_id,
+                    previous_unit_id=previous if isinstance(previous, int) else None,
+                    subject_id=subject_id,
+                ))
+        return sorted(events, key=lambda event: event.timestamp)

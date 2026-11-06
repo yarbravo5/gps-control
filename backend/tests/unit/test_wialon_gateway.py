@@ -142,3 +142,75 @@ def test_connection_error_is_sanitized() -> None:
     with pytest.raises(WialonConnectionError) as raised:
         client.search_items(None, 0, 10)
     assert "private network details" not in str(raised.value)
+
+
+def test_people_gateway_operations_use_adapter_and_map_responses() -> None:
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        data = form(request)
+        if data["svc"] == "token/login":
+            return httpx.Response(200, json={"eid": "mock-session"})
+        service = data["svc"]
+        params = json.loads(data["params"])
+        calls.append((service, params))
+        if service == "resource/update_driver" and params["callMode"] == "create":
+            return httpx.Response(200, json=[3, {"id": 7, "n": "Ana", "c": "A7", "ds": "", "p": "555", "pwd": "pw", "jp": {}, "f": 0}])
+        if service == "resource/update_tag" and params["callMode"] == "create":
+            return httpx.Response(200, json=[4, {"id": 9, "n": "Luis", "c": "P9", "ck": 0, "jp": {}, "tz": 0, "f": 0, "art": 0}])
+        return httpx.Response(200, json={})
+
+    client = make_client(handler)
+    created_driver = client.create_driver(
+        3, name="Ana", code="A7", description="", phone="555",
+        mobile_password="pw", custom_fields={},
+    )
+    created_passenger = client.create_passenger(
+        3, name="Luis", code="P9", phone="555", timezone=0, custom_fields={},
+    )
+    client.bind_driver(3, 7, 20, bind=True, time=123)
+    client.bind_driver(3, 7, 20, bind=False, time=124)
+    client.bind_passenger(3, 9, 20, bind=True, time=125)
+    client.bind_passenger(3, 9, 20, bind=False, time=126)
+    client.delete_driver(3, 7)
+    client.delete_passenger(3, 9)
+
+    assert created_driver.id == 7 and created_driver.name == "Ana"
+    assert created_passenger.id == 9 and created_passenger.name == "Luis"
+    assert calls[2] == (
+        "resource/bind_unit_driver",
+        {"resourceId": 3, "driverId": 7, "unitId": 20, "time": 123, "mode": 1},
+    )
+    assert calls[3][1]["mode"] == 0
+    assert calls[4][0] == "resource/bind_unit_tag" and calls[4][1]["tagId"] == 9
+    assert calls[5][1]["mode"] == 0
+    assert calls[6] == ("resource/update_driver", {"itemId": 3, "id": 7, "callMode": "delete"})
+    assert calls[7] == ("resource/update_tag", {"itemId": 3, "id": 9, "callMode": "delete"})
+
+
+def test_people_list_and_detail_parse_wialon_resource_without_raw_payloads() -> None:
+    requested = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        data = form(request)
+        if data["svc"] == "token/login":
+            return httpx.Response(200, json={"eid": "mock-session"})
+        params = json.loads(data["params"])
+        requested.append(params)
+        return httpx.Response(200, json={"item": {
+            "id": 3, "nm": "Fleet",
+            "drvrs": {"7": {"id": 7, "n": "Ana", "c": "A7", "ds": "", "p": "555", "pwd": "secret", "jp": {"area": "norte"}, "f": 0}},
+            "tags": {"9": {"id": 9, "n": "Luis", "c": "P9", "ck": 0, "jp": {"grupo": "A"}, "tz": -300, "f": 0, "art": 0}},
+        }})
+
+    client = make_client(handler)
+    drivers, driver_count = client.list_drivers(3, "ana", 0, 10)
+    passenger = client.get_passenger(3, 9)
+    assert driver_count == 1 and drivers[0].name == "Ana"
+    assert drivers[0].custom_fields == {"area": "norte"}
+    assert "secret" not in repr(drivers[0])
+    assert passenger is not None and passenger.name == "Luis"
+    assert passenger.custom_fields == {"grupo": "A"}
+    assert "phone" not in passenger.available_fields
+    assert requested[0]["flags"] == WialonClient.RESOURCE_DRIVER_FLAGS
+    assert requested[1]["flags"] == WialonClient.RESOURCE_PASSENGER_FLAGS
