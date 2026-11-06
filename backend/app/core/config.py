@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import EmailStr
+from pydantic import EmailStr, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
 
@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     # Wialon
     wialon_token: str
     wialon_host: str = "hst-api.wialon.com"
+    wialon_http_timeout_seconds: float = Field(default=10.0, gt=0)
+    wialon_no_signal_after_seconds: int = Field(default=600, gt=0)
 
     # CORS
     cors_origins: str = "http://localhost:5173"
