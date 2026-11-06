@@ -1,8 +1,10 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
+from app.core.security import hash_password
 from app.db.session import DatabaseSessionFactory
-from app.models import Permission, Role
+from app.models import Permission, Role, User
 
 
 PERMISSION_CATALOG = [
@@ -72,10 +74,43 @@ def seed_roles_and_permissions(database_session: Session) -> None:
     database_session.commit()
 
 
+def seed_admin_user(database_session: Session) -> None:
+    admin_email = settings.admin_email.strip().lower()
+    admin_password = settings.admin_password
+
+    if not admin_email or not admin_password:
+        return
+
+    existing_user = database_session.scalar(
+        select(User).where(User.email == admin_email)
+    )
+    if existing_user is not None:
+        return
+
+    admin_role = database_session.scalar(
+        select(Role).where(Role.name == "admin")
+    )
+    if admin_role is None:
+        raise RuntimeError("No se encontró el rol admin para crear el administrador.")
+
+    admin_user = User(
+        email=admin_email,
+        name=settings.admin_name.strip() or "Administrador",
+        password_hash=hash_password(admin_password),
+        role=admin_role,
+        is_active=True,
+        must_change_password=True,
+    )
+    database_session.add(admin_user)
+    database_session.commit()
+    print(f"Administrador inicial creado: {admin_email}")
+
+
 def run_seed() -> None:
     with DatabaseSessionFactory() as database_session:
         seed_roles_and_permissions(database_session)
-    print("Seed RBAC completado.")
+        seed_admin_user(database_session)
+    print("Seed completado.")
 
 
 if __name__ == "__main__":
