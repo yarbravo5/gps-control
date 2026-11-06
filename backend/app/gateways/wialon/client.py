@@ -6,11 +6,13 @@ import httpx
 from app.gateways.wialon.dto import (
     WialonBindingEvent,
     WialonDriver,
+    WialonHistoryResult,
     WialonPassenger,
     WialonResource,
     WialonUnit,
     WialonUnitDriver,
     WialonUnitSearchResult,
+    history_from_wialon,
     resource_from_wialon,
     unit_from_wialon,
 )
@@ -134,11 +136,36 @@ class WialonClient:
             "core/search_item", {"id": unit_id, "flags": self.UNIT_FLAGS}
         )
         item = body.get("item") if isinstance(body, dict) else None
+        if item is None:
+            return None
         if not isinstance(item, dict):
             raise WialonConnectionError(
                 "El servicio de telemetría devolvió una unidad en formato inválido."
             )
         return unit_from_wialon(item)
+
+    def load_vehicle_history(
+        self,
+        unit_id: int,
+        time_from: int,
+        time_to: int,
+        *,
+        load_count: int,
+    ) -> WialonHistoryResult:
+        body = self._request("messages/load_interval", {
+            "itemId": unit_id,
+            "timeFrom": time_from,
+            "timeTo": time_to,
+            "flags": 1,
+            "flagsMask": 0xFF01,
+            "loadCount": load_count,
+        })
+        result = history_from_wialon(body)
+        if result is None:
+            raise WialonConnectionError(
+                "El servicio de telemetría devolvió el historial en un formato inválido."
+            )
+        return result
 
     def get_resource(self, resource_id: int, flags: int) -> WialonResource | None:
         body = self._request(

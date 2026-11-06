@@ -1,12 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from app.core.config import settings
 from app.core.dependencies import require_permission
 from app.gateways.wialon import WialonClient
 from app.gateways.wialon.exceptions import WialonIntegrationError
 from app.models import User
+from app.schemas.history import VehicleHistoryQuery, VehicleHistoryResponse
 from app.schemas.vehicle import VehicleListResponse, VehicleResponse, VehicleStatus
-from app.services import vehicle_service
+from app.services import history_service, vehicle_service
 
 
 router = APIRouter(prefix="/vehicles", tags=["vehicles"])
@@ -54,4 +57,30 @@ def list_vehicles(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="No fue posible consultar la flota en este momento.",
+        ) from exc
+
+
+@router.get("/{vehicle_id}/history", response_model=VehicleHistoryResponse)
+def get_vehicle_history(
+    filters: Annotated[VehicleHistoryQuery, Query()],
+    vehicle_id: int = Path(gt=0),
+    _current_user: User = Depends(require_permission("history:view")),
+    gateway: WialonClient = Depends(get_wialon_gateway),
+) -> VehicleHistoryResponse:
+    try:
+        result = history_service.get_vehicle_history(
+            gateway,
+            vehicle_id=vehicle_id,
+            start_at=filters.start_at,
+            end_at=filters.end_at,
+        )
+        return VehicleHistoryResponse.model_validate(result)
+    except history_service.VehicleUnavailableError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except history_service.HistoryPointLimitExceeded as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except WialonIntegrationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="No fue posible consultar el historial del vehículo.",
         ) from exc

@@ -26,6 +26,21 @@ class WialonUnitSearchResult:
 
 
 @dataclass(frozen=True)
+class WialonHistoryMessage:
+    timestamp: int
+    latitude: float | None
+    longitude: float | None
+    speed_kmh: float | None
+    heading_degrees: float | None
+
+
+@dataclass(frozen=True)
+class WialonHistoryResult:
+    messages: list[WialonHistoryMessage]
+    total: int
+
+
+@dataclass(frozen=True)
 class WialonDriver:
     id: int
     name: str
@@ -90,6 +105,30 @@ def _optional_int(value: Any) -> int | None:
     if isinstance(value, bool) or not isinstance(value, int):
         return None
     return value
+
+
+def history_from_wialon(payload: Any) -> WialonHistoryResult | None:
+    if not isinstance(payload, dict) or not isinstance(payload.get("messages"), list):
+        return None
+    raw_total = payload.get("count")
+    total = raw_total if isinstance(raw_total, int) and not isinstance(raw_total, bool) else len(payload["messages"])
+    messages = []
+    for raw in payload["messages"]:
+        if not isinstance(raw, dict):
+            continue
+        timestamp = _optional_int(raw.get("t"))
+        if timestamp is None:
+            continue
+        position = raw.get("pos")
+        position = position if isinstance(position, dict) else {}
+        messages.append(WialonHistoryMessage(
+            timestamp=timestamp,
+            latitude=_finite_number(position.get("y")),
+            longitude=_finite_number(position.get("x")),
+            speed_kmh=_finite_number(position.get("s")),
+            heading_degrees=_finite_number(position.get("c")),
+        ))
+    return WialonHistoryResult(messages=messages, total=max(0, total))
 
 
 def _record_id(record: dict[str, Any], key: str) -> int | None:

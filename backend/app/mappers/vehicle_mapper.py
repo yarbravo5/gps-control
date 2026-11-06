@@ -15,6 +15,14 @@ def heading_to_direction(degrees: float | None) -> str | None:
     return DIRECTIONS[sector]
 
 
+def motion_status(speed_kmh: float | None) -> VehicleStatus:
+    return (
+        VehicleStatus.MOVING
+        if (speed_kmh or 0.0) > MOVING_SPEED_THRESHOLD_KMH
+        else VehicleStatus.STOPPED
+    )
+
+
 def map_vehicle(
     unit: WialonUnit,
     *,
@@ -54,10 +62,8 @@ def map_vehicle(
     )
     if not valid_coordinates or is_stale:
         status = VehicleStatus.NO_SIGNAL
-    elif (speed or 0.0) > MOVING_SPEED_THRESHOLD_KMH:
-        status = VehicleStatus.MOVING
     else:
-        status = VehicleStatus.STOPPED
+        status = motion_status(speed)
 
     return VehicleDTO(
         id=unit.id,

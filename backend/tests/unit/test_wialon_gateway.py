@@ -214,3 +214,37 @@ def test_people_list_and_detail_parse_wialon_resource_without_raw_payloads() -> 
     assert "phone" not in passenger.available_fields
     assert requested[0]["flags"] == WialonClient.RESOURCE_DRIVER_FLAGS
     assert requested[1]["flags"] == WialonClient.RESOURCE_PASSENGER_FLAGS
+
+
+def test_load_vehicle_history_uses_limited_interval_and_maps_dto() -> None:
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        data = form(request)
+        if data["svc"] == "token/login":
+            return httpx.Response(200, json={"eid": "mock-session"})
+        params = json.loads(data["params"])
+        calls.append((data["svc"], params))
+        return httpx.Response(200, json={
+            "count": 1,
+            "messages": [{
+                "t": 1_800_000_000, "f": 1, "tp": "ud",
+                "pos": {"y": 4.7, "x": -74.1, "s": 38, "c": 90},
+            }],
+        })
+
+    client = make_client(handler)
+    result = client.load_vehicle_history(
+        42, 1_800_000_000, 1_800_003_600, load_count=5001
+    )
+    assert calls == [("messages/load_interval", {
+        "itemId": 42,
+        "timeFrom": 1_800_000_000,
+        "timeTo": 1_800_003_600,
+        "flags": 1,
+        "flagsMask": 0xFF01,
+        "loadCount": 5001,
+    })]
+    assert result.total == 1
+    assert result.messages[0].latitude == 4.7
+    assert result.messages[0].speed_kmh == 38
