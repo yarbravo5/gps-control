@@ -5,15 +5,15 @@ from typing import TYPE_CHECKING
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.session import Base
-from app.models.associations import role_permissions
+from app.db.session import DatabaseBase
+from app.models.role_permissions import role_permissions
 
 if TYPE_CHECKING:
     from app.models.permission import Permission
     from app.models.user import User
 
 
-class Role(Base):
+class Role(DatabaseBase):
     __tablename__ = "roles"
 
     id: Mapped[int] = mapped_column(primary_key=True)

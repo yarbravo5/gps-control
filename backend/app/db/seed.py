@@ -1,11 +1,11 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.session import SessionLocal
+from app.db.session import DatabaseSessionFactory
 from app.models import Permission, Role
 
 
-PERMISSIONS = [
+PERMISSION_CATALOG = [
     ("dashboard:view", "Ver dashboard"),
     ("vehicles:view", "Ver vehículos y mapa"),
     ("vehicles:custom_fields:write", "Editar campos personalizados de vehículos"),
@@ -21,17 +21,17 @@ PERMISSIONS = [
     ("audit:view", "Ver registro de auditoría"),
 ]
 
-ROLE_DESCRIPTIONS = {
+ROLE_DESCRIPTIONS_BY_NAME = {
     "admin": "Acceso total al sistema",
     "operator": "Gestión operativa de la flota",
     "viewer": "Acceso de solo lectura",
 }
 
-ROLE_PERMISSIONS = {
-    "admin": [code for code, _ in PERMISSIONS],
+PERMISSIONS_BY_ROLE = {
+    "admin": [code for code, _ in PERMISSION_CATALOG],
     "operator": [
         code
-        for code, _ in PERMISSIONS
+        for code, _ in PERMISSION_CATALOG
         if code not in {"users:manage", "audit:view"}
     ],
     "viewer": [
@@ -44,37 +44,39 @@ ROLE_PERMISSIONS = {
 }
 
 
-def seed_rbac(db: Session) -> None:
+def seed_roles_and_permissions(database_session: Session) -> None:
     permission_by_code: dict[str, Permission] = {}
 
-    for code, description in PERMISSIONS:
-        permission = db.scalar(select(Permission).where(Permission.code == code))
+    for code, description in PERMISSION_CATALOG:
+        permission = database_session.scalar(
+            select(Permission).where(Permission.code == code)
+        )
         if permission is None:
             permission = Permission(code=code, description=description)
-            db.add(permission)
-            db.flush()
+            database_session.add(permission)
+            database_session.flush()
         permission_by_code[code] = permission
 
-    for role_name, permission_codes in ROLE_PERMISSIONS.items():
-        role = db.scalar(select(Role).where(Role.name == role_name))
+    for role_name, permission_codes in PERMISSIONS_BY_ROLE.items():
+        role = database_session.scalar(select(Role).where(Role.name == role_name))
         if role is None:
             role = Role(
                 name=role_name,
-                description=ROLE_DESCRIPTIONS[role_name],
+                description=ROLE_DESCRIPTIONS_BY_NAME[role_name],
             )
-            db.add(role)
-            db.flush()
+            database_session.add(role)
+            database_session.flush()
 
         role.permissions = [permission_by_code[code] for code in permission_codes]
 
-    db.commit()
+    database_session.commit()
 
 
-def main() -> None:
-    with SessionLocal() as db:
-        seed_rbac(db)
+def run_seed() -> None:
+    with DatabaseSessionFactory() as database_session:
+        seed_roles_and_permissions(database_session)
     print("Seed RBAC completado.")
 
 
 if __name__ == "__main__":
-    main()
+    run_seed()

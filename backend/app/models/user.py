@@ -6,17 +6,17 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.session import Base
+from app.db.session import DatabaseBase
 
 if TYPE_CHECKING:
     from app.models.role import Role
 
 
-def utc_now() -> datetime:
+def get_current_utc_datetime() -> datetime:
     return datetime.now(timezone.utc)
 
 
-class User(Base):
+class User(DatabaseBase):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -69,14 +69,14 @@ class User(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=utc_now,
+        default=get_current_utc_datetime,
         server_default=func.now(),
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=utc_now,
-        onupdate=utc_now,
+        default=get_current_utc_datetime,
+        onupdate=get_current_utc_datetime,
         server_default=func.now(),
         nullable=False,
     )
