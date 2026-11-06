@@ -1,4 +1,8 @@
+from typing import Literal
+
+from pydantic import EmailStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import URL
 
 
 class Settings(BaseSettings):
@@ -14,6 +18,15 @@ class Settings(BaseSettings):
 
     # Security
     jwt_secret: str
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 7
+    login_max_attempts: int = 5
+    login_lockout_minutes: int = 15
+
+    # Cookies
+    cookie_secure: bool = False
+    cookie_samesite: Literal["lax", "strict", "none"] = "lax"
+    cookie_domain: str | None = None
 
     # Wialon
     wialon_token: str
@@ -23,7 +36,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
 
     # Admin seed
-    admin_email: str
+    admin_email: EmailStr
     admin_name: str
     admin_password: str
 
@@ -35,11 +48,22 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        return (
-            f"postgresql+psycopg://"
-            f"{self.db_user}:{self.db_password}"
-            f"@{self.db_host}:{self.db_port}/{self.db_name}"
-        )
+        return URL.create(
+            "postgresql+psycopg",
+            username=self.db_user,
+            password=self.db_password,
+            host=self.db_host,
+            port=self.db_port,
+            database=self.db_name,
+        ).render_as_string(hide_password=False)
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [
+            origin.strip()
+            for origin in self.cors_origins.split(",")
+            if origin.strip()
+        ]
 
 
 settings = Settings()

@@ -1,19 +1,18 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.time import get_current_utc_datetime
 from app.db.session import DatabaseBase
 
 if TYPE_CHECKING:
+    from app.models.audit_log import AuditLog
+    from app.models.refresh_token import RefreshToken
     from app.models.role import Role
-
-
-def get_current_utc_datetime() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 class User(DatabaseBase):
@@ -79,4 +78,14 @@ class User(DatabaseBase):
         onupdate=get_current_utc_datetime,
         server_default=func.now(),
         nullable=False,
+    )
+
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        "RefreshToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    audit_logs: Mapped[list["AuditLog"]] = relationship(
+        "AuditLog",
+        back_populates="user",
     )
