@@ -1,1 +1,50 @@
-﻿# Servicios locales pendientes de definir.
+﻿services:
+  database:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: "${DB_NAME:-gps_control_db}"
+      POSTGRES_USER: "${DB_USER:-gps_control_user}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-gps_control_dev_password}"
+    ports:
+      - "${DB_HOST_PORT:-5433}:5432"
+    volumes:
+      - gps_control_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      APP_NAME: "${APP_NAME:-GPS Control API}"
+      ENVIRONMENT: "${ENVIRONMENT:-development}"
+      DB_HOST: database
+      DB_PORT: "5432"
+      DB_NAME: "${DB_NAME:-gps_control_db}"
+      DB_USER: "${DB_USER:-gps_control_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-gps_control_dev_password}"
+      JWT_SECRET: "${JWT_SECRET:-dev-only-jwt-secret-change-me-please}"
+      WIALON_TOKEN: "${WIALON_TOKEN:-}"
+      WIALON_HOST: "${WIALON_HOST:-hst-api.wialon.com}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173}"
+      ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@example.com}"
+      ADMIN_NAME: "${ADMIN_NAME:-Administrador}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-Admin123!ChangeMe}"
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+volumes:
+  gps_control_postgres_data:
