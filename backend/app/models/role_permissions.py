@@ -1,11 +1,11 @@
 from sqlalchemy import Column, ForeignKey, Index, Integer, Table
 
-from app.db.session import Base
+from app.db.session import DatabaseBase
 
 
 role_permissions = Table(
     "role_permissions",
-    Base.metadata,
+    DatabaseBase.metadata,
     Column(
         "role_id",
         Integer,
