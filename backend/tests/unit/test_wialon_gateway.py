@@ -238,6 +238,45 @@ def test_unit_driver_lookup_aggregates_resources_and_ignores_invalid_records() -
     ]
 
 
+def test_search_resources_requests_driver_and_passenger_flags_and_maps_dtos() -> None:
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        data = form(request)
+        if data["svc"] == "token/login":
+            return httpx.Response(200, json={"eid": "mock-session"})
+        params = json.loads(data["params"])
+        calls.append((data["svc"], params))
+        return httpx.Response(200, json={
+            "totalItemsCount": 1,
+            "items": [{
+                "id": 20,
+                "nm": "Flota",
+                "drvrs": {"7": {"id": 7, "n": "Ana", "bu": 42}},
+                "tags": {"9": {"id": 9, "n": "Luis", "tz": 0, "ck": 0, "f": 0, "art": 0}},
+            }],
+        })
+
+    client = make_client(handler)
+    result = client.search_resources(0, 100)
+
+    assert calls == [("core/search_items", {
+        "spec": {
+            "itemsType": "avl_resource",
+            "propName": "sys_name",
+            "propValueMask": "*",
+            "sortType": "sys_name",
+        },
+        "force": 1,
+        "flags": WialonClient.RESOURCE_PEOPLE_FLAGS,
+        "from": 0,
+        "to": 99,
+    })]
+    assert result.total == 1
+    assert result.items[0].drivers[0].bound_unit_id == 42
+    assert result.items[0].passengers[0].name == "Luis"
+
+
 def test_load_vehicle_history_uses_limited_interval_and_maps_dto() -> None:
     calls = []
 

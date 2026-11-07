@@ -8,6 +8,18 @@ import type { AuthUser } from "../src/features/auth/types";
 
 const api = vi.hoisted(() => ({ loginRequest: vi.fn(), refreshRequest: vi.fn(), getCurrentUser: vi.fn(), logoutRequest: vi.fn(), changePasswordRequest: vi.fn() }));
 vi.mock("../src/features/auth/authApi", () => api);
+vi.mock("../src/features/dashboard/dashboardApi", () => ({
+  getFleetDashboard: vi.fn().mockResolvedValue({
+    total_vehicles: 1,
+    moving_vehicles: 1,
+    stopped_vehicles: 0,
+    no_signal_vehicles: 0,
+    vehicles_with_driver: 0,
+    vehicles_without_driver: 1,
+    total_drivers: 0,
+    total_passengers: 0,
+  }),
+}));
 
 const makeUser = (role: AuthUser["role"], permissions: string[] = [], must_change_password = false): AuthUser => ({
   id: 7, email: "person@example.com", name: "Casey User", role, is_active: true, must_change_password,
@@ -40,7 +52,7 @@ describe("autenticación y autorización", () => {
     await user.type(await screen.findByLabelText("Correo electrónico"), "person@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "Secret123");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
-    expect(await screen.findByRole("heading", { name: "Hola, Casey User" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Panel de control" })).toBeVisible();
     await user.click(screen.getByRole("link", { name: "Usuarios y roles" }));
     expect(await screen.findByRole("heading", { name: "Usuarios y roles" })).toBeVisible();
   });
@@ -52,7 +64,7 @@ describe("autenticación y autorización", () => {
     await user.type(await screen.findByLabelText("Correo electrónico"), "person@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "Secret123");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
-    await screen.findByRole("heading", { name: "Hola, Casey User" });
+    await screen.findByRole("heading", { name: "Panel de control" });
     expect(screen.queryByRole("link", { name: "Usuarios y roles" })).not.toBeInTheDocument();
     window.history.pushState({}, "", "/app/admin");
     window.dispatchEvent(new PopStateEvent("popstate"));
@@ -83,7 +95,7 @@ describe("autenticación y autorización", () => {
     await user.type(await screen.findByLabelText("Correo electrónico"), "person@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "Secret123");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
-    await screen.findByRole("heading", { name: "Hola, Casey User" });
+    await screen.findByRole("heading", { name: "Panel de control" });
     const menuButton = screen.getByRole("button", { name: "Abrir navegación" });
     expect(menuButton).toHaveAttribute("aria-expanded", "false");
     await user.click(menuButton);

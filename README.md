@@ -56,12 +56,12 @@ Roles disponibles:
 - Shell de aplicación con navegación responsive y accesible.
 - Listado de vehículos conectado al API con búsqueda, filtros por estado y paginación del servidor.
 - Mapa OpenStreetMap con clustering, marcadores por estado, selección sincronizada y actualización cada 30 segundos que se pausa con la pestaña oculta.
+- Dashboard con KPIs y gráficas calculadas desde vehículos, conductores y pasajeros devueltos por Wialon.
 - Aviso de arranque en frío para el plan gratuito de Render.
 - Pruebas de componentes, router, cliente HTTP y flujo de autenticación.
 
 ### Pendiente para siguientes iteraciones
 
-- Dashboard con métricas de flota.
 - Listado de pasajeros asignados dentro de la ficha de vehículo; el conductor vinculado ya se consulta desde Wialon.
 - Reproductor de historial de recorridos.
 - Pantallas CRUD de conductores y pasajeros.
@@ -389,6 +389,7 @@ Pautas aplicadas:
 | --- | --- |
 | Autenticacion y sesiones | Completo en backend y frontend |
 | RBAC y permisos | Completo en backend; guards en frontend |
+| Dashboard | API de métricas protegida y gráficas frontend; pendiente verificar con recursos reales de Wialon en producción |
 | Vehiculos y Wialon | Listado, mapa y detalle con conductor integrados; pasajeros en detalle pendientes |
 | Historial de recorridos | Backend completo; reproductor pendiente |
 | Conductores y pasajeros | Backend completo; pantallas pendientes |

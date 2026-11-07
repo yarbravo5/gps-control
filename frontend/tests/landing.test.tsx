@@ -8,6 +8,18 @@ import type { AuthUser } from "../src/features/auth/types";
 
 const api = vi.hoisted(() => ({ loginRequest: vi.fn(), refreshRequest: vi.fn(), getCurrentUser: vi.fn(), logoutRequest: vi.fn(), changePasswordRequest: vi.fn() }));
 vi.mock("../src/features/auth/authApi", () => api);
+vi.mock("../src/features/dashboard/dashboardApi", () => ({
+  getFleetDashboard: vi.fn().mockResolvedValue({
+    total_vehicles: 1,
+    moving_vehicles: 1,
+    stopped_vehicles: 0,
+    no_signal_vehicles: 0,
+    vehicles_with_driver: 0,
+    vehicles_without_driver: 1,
+    total_drivers: 0,
+    total_passengers: 0,
+  }),
+}));
 
 const admin: AuthUser = { id: 1, email: "admin@example.com", name: "Ana Admin", role: "admin", is_active: true, must_change_password: false, created_at: "2026-01-01T00:00:00Z", last_login_at: null, permissions: ["dashboard:view", "vehicles:view", "users:manage"] };
 
@@ -94,7 +106,7 @@ describe("landing pública", () => {
     await user.type(await screen.findByLabelText("Correo electrónico"), "admin@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "Secret123");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
-    await screen.findByRole("heading", { name: "Hola, Ana Admin" });
+    await screen.findByRole("heading", { name: "Panel de control" });
     act(() => {
       window.history.pushState({}, "", "/");
       window.dispatchEvent(new PopStateEvent("popstate"));

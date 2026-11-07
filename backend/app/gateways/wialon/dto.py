@@ -80,6 +80,12 @@ class WialonResource:
 
 
 @dataclass(frozen=True)
+class WialonResourceSearchResult:
+    items: list[WialonResource]
+    total: int
+
+
+@dataclass(frozen=True)
 class WialonBindingEvent:
     timestamp: int
     unit_id: int

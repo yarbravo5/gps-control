@@ -9,6 +9,7 @@ from app.gateways.wialon.dto import (
     WialonHistoryResult,
     WialonPassenger,
     WialonResource,
+    WialonResourceSearchResult,
     WialonUnit,
     WialonUnitDriver,
     WialonUnitSearchResult,
@@ -34,6 +35,7 @@ class WialonClient:
     RESOURCE_PASSENGER_FLAGS = RESOURCE_BASE_FLAGS + 2_097_152
     RESOURCE_DRIVER_AUTO_FLAGS = RESOURCE_DRIVER_FLAGS + 16_384
     RESOURCE_PASSENGER_AUTO_FLAGS = RESOURCE_PASSENGER_FLAGS + 4_194_304
+    RESOURCE_PEOPLE_FLAGS = RESOURCE_DRIVER_FLAGS | RESOURCE_PASSENGER_FLAGS
 
     def __init__(
         self,
@@ -143,6 +145,37 @@ class WialonClient:
                 "El servicio de telemetría devolvió una unidad en formato inválido."
             )
         return unit_from_wialon(item)
+
+    def search_resources(self, offset: int, limit: int) -> WialonResourceSearchResult:
+        body = self._request(
+            "core/search_items",
+            {
+                "spec": {
+                    "itemsType": "avl_resource",
+                    "propName": "sys_name",
+                    "propValueMask": "*",
+                    "sortType": "sys_name",
+                },
+                "force": 1,
+                "flags": self.RESOURCE_PEOPLE_FLAGS,
+                "from": offset,
+                "to": offset + limit - 1,
+            },
+        )
+        if not isinstance(body, dict) or not isinstance(body.get("items"), list):
+            raise WialonConnectionError(
+                "El servicio de telemetría devolvió recursos en un formato inválido."
+            )
+        resources = [
+            resource
+            for item in body["items"]
+            if isinstance(item, dict)
+            if (resource := resource_from_wialon(item)) is not None
+        ]
+        total = body.get("totalItemsCount")
+        if isinstance(total, bool) or not isinstance(total, int):
+            total = len(resources)
+        return WialonResourceSearchResult(items=resources, total=max(0, total))
 
     def load_vehicle_history(
         self,

@@ -1,11 +1,19 @@
 import { Link, useLocation } from "react-router-dom";
 
 import { Card } from "../../components/ui/Card";
+import { DashboardPage } from "../dashboard/DashboardPage";
 import { useAuth } from "./AuthProvider";
 
 export function AppHomePage() {
   const { user } = useAuth();
-  return <Card title={`Hola, ${user?.name}`}><p className="text-muted">Tu sesión está activa con el rol {user?.role}. Los módulos del sistema se incorporarán en las siguientes fases.</p></Card>;
+  return <section className="grid gap-6" aria-labelledby="dashboard-title">
+    <header>
+      <p className="eyebrow">Resumen de operación</p>
+      <h1 className="text-2xl font-bold text-slate-950" id="dashboard-title">Panel de control</h1>
+      <p className="mt-1 text-sm text-muted">Hola, {user?.name}. Indicadores actuales de la flota.</p>
+    </header>
+    <DashboardPage />
+  </section>;
 }
 
 export function AdminAccessPage() {
