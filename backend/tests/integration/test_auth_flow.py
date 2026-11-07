@@ -2,7 +2,15 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app.models import User
-from tests.conftest import ADMIN_EMAIL, ADMIN_PASSWORD, VIEWER_EMAIL, VIEWER_PASSWORD, login
+from tests.conftest import (
+    ADMIN_EMAIL,
+    ADMIN_PASSWORD,
+    OPERATOR_EMAIL,
+    OPERATOR_PASSWORD,
+    VIEWER_EMAIL,
+    VIEWER_PASSWORD,
+    login,
+)
 
 
 def test_login_me_refresh_and_logout(client: TestClient) -> None:
@@ -45,6 +53,44 @@ def test_viewer_cannot_manage_users(client: TestClient) -> None:
     assert response.status_code == 403
 
 
+def test_operator_cannot_manage_users_or_escalate_role(client: TestClient) -> None:
+    operator_login = login(client, OPERATOR_EMAIL, OPERATOR_PASSWORD)
+    operator_headers = {
+        "Authorization": f"Bearer {operator_login['access_token']}"
+    }
+
+    list_response = client.get("/api/v1/users", headers=operator_headers)
+    escalation_response = client.patch(
+        "/api/v1/users/1",
+        headers=operator_headers,
+        json={"role": "admin", "is_active": True},
+    )
+
+    assert list_response.status_code == 403
+    assert escalation_response.status_code == 403
+
+
+def test_viewer_cannot_write_by_changing_resource_and_entity_ids(
+    client: TestClient,
+) -> None:
+    viewer_login = login(client, VIEWER_EMAIL, VIEWER_PASSWORD)
+    viewer_headers = {"Authorization": f"Bearer {viewer_login['access_token']}"}
+
+    driver_response = client.patch(
+        "/api/v1/drivers/999?resource_id=999",
+        headers=viewer_headers,
+        json={"name": "Escalated"},
+    )
+    passenger_response = client.post(
+        "/api/v1/passengers",
+        headers=viewer_headers,
+        json={"resource_id": 999, "name": "Escalated", "code": "X999", "phone": "123"},
+    )
+
+    assert driver_response.status_code == 403
+    assert passenger_response.status_code == 403
+
+
 def test_admin_can_create_update_and_deactivate_user(
     client: TestClient,
     database_session,
@@ -56,7 +102,7 @@ def test_admin_can_create_update_and_deactivate_user(
         "/api/v1/users",
         headers=auth_headers,
         json={
-            "email": "operator@gpscontrol.com",
+            "email": "managed.operator@gpscontrol.com",
             "name": "Operador",
             "password": "Operator123!ChangeMe",
             "role": "operator",

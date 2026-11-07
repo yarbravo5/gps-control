@@ -16,6 +16,8 @@ ADMIN_EMAIL = "admin@gpscontrol.com"
 ADMIN_PASSWORD = "Admin123!ChangeMe"
 VIEWER_EMAIL = "viewer@gpscontrol.com"
 VIEWER_PASSWORD = "Viewer123!ChangeMe"
+OPERATOR_EMAIL = "operator@gpscontrol.com"
+OPERATOR_PASSWORD = "Operator123!ChangeMe"
 
 
 @pytest.fixture()
@@ -35,8 +37,10 @@ def session_factory():
     with testing_session_factory() as database_session:
         seed_roles_and_permissions(database_session)
         admin_role = get_role_by_name(database_session, "admin")
+        operator_role = get_role_by_name(database_session, "operator")
         viewer_role = get_role_by_name(database_session, "viewer")
         assert admin_role is not None
+        assert operator_role is not None
         assert viewer_role is not None
         database_session.add_all(
             [
@@ -45,6 +49,14 @@ def session_factory():
                     name="Administrador",
                     password_hash=hash_password(ADMIN_PASSWORD),
                     role=admin_role,
+                    is_active=True,
+                    must_change_password=False,
+                ),
+                User(
+                    email=OPERATOR_EMAIL,
+                    name="Operador",
+                    password_hash=hash_password(OPERATOR_PASSWORD),
+                    role=operator_role,
                     is_active=True,
                     must_change_password=False,
                 ),

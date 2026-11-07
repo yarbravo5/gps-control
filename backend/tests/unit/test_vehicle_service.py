@@ -9,10 +9,16 @@ from app.gateways.wialon.client import WialonClient
 from app.api.v1.vehicles import get_wialon_gateway
 from app.main import app
 from app.models import User
-from app.core.security import hash_password
-from app.repositories.user_repository import get_role_by_name
 from app.schemas.vehicle import VehicleStatus
-from tests.conftest import ADMIN_EMAIL, ADMIN_PASSWORD, VIEWER_EMAIL, VIEWER_PASSWORD, login
+from tests.conftest import (
+    ADMIN_EMAIL,
+    ADMIN_PASSWORD,
+    OPERATOR_EMAIL,
+    OPERATOR_PASSWORD,
+    VIEWER_EMAIL,
+    VIEWER_PASSWORD,
+    login,
+)
 
 
 class FakeGateway:
@@ -169,25 +175,9 @@ def test_viewer_can_list_vehicles(client: TestClient):
     app.dependency_overrides.pop(get_wialon_gateway, None)
 
 
-def test_operator_can_list_vehicles_with_catalog_permission(
-    client: TestClient, database_session
-):
-    operator_role = get_role_by_name(database_session, "operator")
-    assert operator_role is not None
-    assert "vehicles:view" in {permission.code for permission in operator_role.permissions}
-    database_session.add(
-        User(
-            email="operator@gpscontrol.com",
-            name="Operador",
-            password_hash=hash_password("Operator123!ChangeMe"),
-            role=operator_role,
-            is_active=True,
-            must_change_password=False,
-        )
-    )
-    database_session.commit()
+def test_operator_can_list_vehicles_with_catalog_permission(client: TestClient):
     app.dependency_overrides[get_wialon_gateway] = lambda: FakeGateway([])
-    auth = login(client, "operator@gpscontrol.com", "Operator123!ChangeMe")
+    auth = login(client, OPERATOR_EMAIL, OPERATOR_PASSWORD)
     response = client.get(
         "/api/v1/vehicles",
         headers={"Authorization": f"Bearer {auth['access_token']}"},

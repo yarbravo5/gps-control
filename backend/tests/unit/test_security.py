@@ -8,6 +8,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.db.seed import PERMISSIONS_BY_ROLE
 
 
 def test_password_hash_roundtrip() -> None:
@@ -42,3 +43,34 @@ def test_token_type_is_enforced() -> None:
 
     with pytest.raises(TokenError):
         decode_token(token, "refresh")
+
+
+def test_role_permission_matrix_matches_functional_requirements() -> None:
+    admin_permissions = set(PERMISSIONS_BY_ROLE["admin"])
+    operator_permissions = set(PERMISSIONS_BY_ROLE["operator"])
+    viewer_permissions = set(PERMISSIONS_BY_ROLE["viewer"])
+
+    assert operator_permissions < admin_permissions
+    assert viewer_permissions < operator_permissions
+    assert {"users:manage", "audit:view"}.isdisjoint(operator_permissions)
+    assert {
+        "drivers:write",
+        "drivers:bind",
+        "passengers:write",
+        "passengers:bind",
+        "vehicles:custom_fields:write",
+        "export:csv",
+    }.issubset(operator_permissions)
+    assert {
+        "dashboard:view",
+        "vehicles:view",
+        "drivers:view",
+        "passengers:view",
+        "history:view",
+    }.issubset(viewer_permissions)
+    assert not any(
+        permission.endswith(":write")
+        or permission.endswith(":bind")
+        or permission in {"users:manage", "audit:view", "export:csv"}
+        for permission in viewer_permissions
+    )
