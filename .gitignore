@@ -15,6 +15,17 @@ __pycache__/
 node_modules/
 dist/
 .vite/
+*.tsbuildinfo
+
+# Tests and coverage
+coverage/
+htmlcov/
+playwright-report/
+test-results/
+.qa-*.png
+
+# Deploy
+.vercel/
 
 # IDE
 .vscode/
