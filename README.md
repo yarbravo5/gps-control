@@ -8,12 +8,12 @@ Este repositorio corresponde a la prueba técnica de GPS Control. El backend est
 
 | Recurso | URL |
 | --- | --- |
-| Aplicación | Pendiente de despliegue |
-| API | Pendiente de despliegue |
-| Swagger | Pendiente de despliegue (`/docs`) |
+| Aplicación | <https://gps-control-mu.vercel.app> |
+| API | <https://gps-control-api-yb.onrender.com> |
+| Swagger | <https://gps-control-api-yb.onrender.com/docs> |
 | Repositorio | https://github.com/yarbravo5/gps-control |
 
-Las URLs anteriores se actualizan al completar el despliegue en Neon, Render y Vercel.
+Despliegue activo en Neon (PostgreSQL), Render (API Docker) y Vercel (SPA). El frontend consume la API mediante el proxy same-origin `/api` de Vercel y GitHub Actions mantiene Render despierto cada 10 minutos.
 
 ## Credenciales de prueba
 
@@ -357,7 +357,7 @@ El plan gratuito de Render suspende el servicio tras un periodo de inactividad. 
 
 - El frontend muestra un aviso cuando el arranque tarda mas de cinco segundos.
 - El login y el refresh usan un timeout extendido de 60 segundos.
-- Se puede programar un keep-alive cada 10 minutos hacia `/health` con GitHub Actions o UptimeRobot.
+- El workflow `.github/workflows/keep-alive.yml` consulta `/health` cada 10 minutos para reducir los arranques en frío.
 
 ## Decisiones tecnicas
 
