@@ -2,7 +2,7 @@
 
 Sistema de monitoreo de flota construido sobre Wialon, con autenticación por roles, API REST, auditoría y frontend React.
 
-Este repositorio corresponde a la prueba técnica de GPS Control. El backend está funcional y cubierto por pruebas; el frontend incluye la landing, el flujo completo de autenticación y el shell de la aplicación. Los módulos de producto del frontend están preparados como siguientes iteraciones.
+Este repositorio corresponde a la prueba técnica de GPS Control. El backend incluye autenticación, permisos e integración con Wialon; el frontend incluye la landing, el flujo de autenticación, el shell de la aplicación y un listado de vehículos con búsqueda, filtros y paginación del servidor. El mapa, dashboard y demás módulos de gestión del frontend siguen pendientes.
 
 ## Enlaces de la entrega
 
@@ -54,13 +54,14 @@ Roles disponibles:
 - Restauración de sesión, refresh automático, logout y expiración de sesión.
 - Guards de autenticación y autorización por permisos.
 - Shell de aplicación con navegación responsive y accesible.
+- Listado de vehículos conectado al API con búsqueda, filtros por estado y paginación del servidor.
 - Aviso de arranque en frío para el plan gratuito de Render.
 - Pruebas de componentes, router, cliente HTTP y flujo de autenticación.
 
 ### Pendiente para siguientes iteraciones
 
 - Dashboard con métricas de flota.
-- Mapa en tiempo real y ficha de vehículo.
+- Mapa en tiempo real, ficha de vehículo y sincronización de selección.
 - Reproductor de historial de recorridos.
 - Pantallas CRUD de conductores y pasajeros.
 - Panel de usuarios y auditoría en el frontend.
@@ -385,9 +386,9 @@ Pautas aplicadas:
 | --- | --- |
 | Autenticacion y sesiones | Completo en backend y frontend |
 | RBAC y permisos | Completo en backend; guards en frontend |
-| Vehiculos y Wialon | Backend completo; pantalla pendiente |
+| Vehiculos y Wialon | Backend completo; listado integrado en frontend, mapa y detalle pendientes |
 | Historial de recorridos | Backend completo; reproductor pendiente |
 | Conductores y pasajeros | Backend completo; pantallas pendientes |
 | Usuarios y auditoria | Backend completo; pantallas pendientes |
 | Exportacion CSV | Pendiente |
-| Despliegue publico | En preparacion |
+| Despliegue publico | Frontend y backend activos; los commits locales recientes aún no están desplegados |
