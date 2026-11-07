@@ -57,7 +57,7 @@ Roles disponibles:
 - Listado de vehículos conectado al API con búsqueda, filtros por estado y paginación del servidor.
 - Mapa OpenStreetMap con clustering, marcadores por estado, selección sincronizada y actualización cada 30 segundos que se pausa con la pestaña oculta.
 - Dashboard con KPIs y gráficas calculadas desde vehículos, conductores y pasajeros devueltos por Wialon.
-- Listados de conductores y pasajeros con selección de recurso Wialon, búsqueda y paginación del servidor.
+- CRUD de conductores y pasajeros con selección de recurso, búsqueda/paginación, custom fields y vinculación a unidades Wialon.
 - Aviso de arranque en frío para el plan gratuito de Render.
 - Pruebas de componentes, router, cliente HTTP y flujo de autenticación.
 
@@ -65,7 +65,8 @@ Roles disponibles:
 
 - Listado de pasajeros asignados dentro de la ficha de vehículo; el conductor vinculado ya se consulta desde Wialon.
 - Reproductor de historial de recorridos.
-- Formularios CRUD, custom fields y bindings para conductores y pasajeros.
+- Mostrar pasajeros vinculados en el detalle del vehículo.
+- Panel frontend de usuarios/auditoría, campos personalizados de vehículos e historial con playback.
 - Panel de usuarios y auditoría en el frontend.
 - Exportación CSV (el permiso `export:csv` ya existe en el catálogo).
 - Rate limiting global adicional al bloqueo de login.
@@ -393,7 +394,7 @@ Pautas aplicadas:
 | Dashboard | API de métricas protegida y gráficas frontend; pendiente verificar con recursos reales de Wialon en producción |
 | Vehiculos y Wialon | Listado, mapa y detalle con conductor integrados; pasajeros en detalle pendientes |
 | Historial de recorridos | Backend completo; reproductor pendiente |
-| Conductores y pasajeros | Lectura, búsqueda y paginación frontend; formularios CRUD, bindings y custom fields pendientes |
+| Conductores y pasajeros | CRUD, custom fields y bindings integrados; pasajeros en detalle de vehículo pendientes |
 | Usuarios y auditoria | Backend completo; pantallas pendientes |
 | Exportacion CSV | Pendiente |
 | Despliegue publico | Frontend y backend activos; los commits locales recientes aún no están desplegados |

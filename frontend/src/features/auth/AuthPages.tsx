@@ -1,8 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
+import { Suspense, lazy } from "react";
 
 import { Card } from "../../components/ui/Card";
-import { DashboardPage } from "../dashboard/DashboardPage";
 import { useAuth } from "./AuthProvider";
+
+const DashboardPage = lazy(() => import("../dashboard/DashboardPage").then((module) => ({ default: module.DashboardPage })));
 
 export function AppHomePage() {
   const { user } = useAuth();
@@ -12,7 +14,9 @@ export function AppHomePage() {
       <h1 className="text-2xl font-bold text-slate-950" id="dashboard-title">Panel de control</h1>
       <p className="mt-1 text-sm text-muted">Hola, {user?.name}. Indicadores actuales de la flota.</p>
     </header>
-    <DashboardPage />
+    <Suspense fallback={<div aria-live="polite" className="py-5 text-sm text-muted" role="status">Cargando panel de control…</div>}>
+      <DashboardPage />
+    </Suspense>
   </section>;
 }
 
