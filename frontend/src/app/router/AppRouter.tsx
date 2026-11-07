@@ -6,7 +6,9 @@ import { ChangePasswordPage } from "../../features/auth/ChangePasswordPage";
 import { LoginPage } from "../../features/auth/LoginPage";
 import { PublicOnly, RequireAuth, RequirePermission } from "../../features/auth/RouteGuards";
 import { NotFoundPage } from "../../features/foundation/NotFoundPage";
+import { DriversPage } from "../../features/drivers/DriversPage";
 import { LandingPage } from "../../features/landing/LandingPage";
+import { PassengersPage } from "../../features/passengers/PassengersPage";
 import { VehiclesPage } from "../../features/vehicles/VehiclesPage";
 
 export function AppRouter() {
@@ -20,8 +22,8 @@ export function AppRouter() {
           <Route path="/app" element={<AppShell />}>
             <Route element={<RequirePermission permission="dashboard:view" />}><Route index element={<AppHomePage />} /></Route>
             <Route element={<RequirePermission permission="vehicles:view" />}><Route path="vehicles" element={<VehiclesPage />} /></Route>
-            <Route element={<RequirePermission permission="drivers:view" />}><Route path="drivers" element={<ModulePlaceholderPage />} /></Route>
-            <Route element={<RequirePermission permission="passengers:view" />}><Route path="passengers" element={<ModulePlaceholderPage />} /></Route>
+            <Route element={<RequirePermission permission="drivers:view" />}><Route path="drivers" element={<DriversPage />} /></Route>
+            <Route element={<RequirePermission permission="passengers:view" />}><Route path="passengers" element={<PassengersPage />} /></Route>
             <Route element={<RequirePermission permission="history:view" />}><Route path="history" element={<ModulePlaceholderPage />} /></Route>
             <Route element={<RequirePermission permission="users:manage" />}><Route path="admin" element={<AdminAccessPage />} /></Route>
           </Route>

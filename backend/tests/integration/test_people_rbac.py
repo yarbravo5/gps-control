@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 
 from app.api.v1.vehicles import get_wialon_gateway
 from app.gateways.wialon.exceptions import WialonApiError
+from app.gateways.wialon.dto import WialonResourceSearchResult, resource_from_wialon
 from tests.conftest import ADMIN_EMAIL, ADMIN_PASSWORD, VIEWER_EMAIL, VIEWER_PASSWORD, login
 
 
@@ -11,6 +12,15 @@ class FakePeopleGateway:
 
     def list_passengers(self, resource_id, query, offset, limit):
         return [], 0
+
+    def search_resources(self, offset, limit):
+        resource = resource_from_wialon({
+            "id": 20,
+            "nm": "Flota demo",
+            "drvrs": {"7": {"id": 7, "n": "Conductor"}},
+            "tags": {"9": {"id": 9, "n": "Pasajero"}},
+        })
+        return WialonResourceSearchResult([resource] if offset == 0 else [], 1)
 
 
 def test_people_read_endpoints_require_rbac_and_sanitize_wialon_errors(client: TestClient):
@@ -38,5 +48,24 @@ def test_people_read_endpoints_require_rbac_and_sanitize_wialon_errors(client: T
             json={"resource_id": 20, "unit_id": 30},
         )
         assert denied_binding.status_code == 403
+    finally:
+        client.app.dependency_overrides.pop(get_wialon_gateway, None)
+
+
+def test_viewer_can_list_resource_summaries_without_person_payloads(client: TestClient):
+    client.app.dependency_overrides[get_wialon_gateway] = lambda: FakePeopleGateway()
+    try:
+        viewer = login(client, VIEWER_EMAIL, VIEWER_PASSWORD)
+        headers = {"Authorization": f"Bearer {viewer['access_token']}"}
+
+        response = client.get("/api/v1/resources", headers=headers)
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "items": [{"id": 20, "name": "Flota demo"}],
+            "total": 1,
+            "offset": 0,
+            "limit": 100,
+        }
     finally:
         client.app.dependency_overrides.pop(get_wialon_gateway, None)

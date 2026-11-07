@@ -110,6 +110,18 @@ class PassengerListResponse(BaseModel):
     limit: int
 
 
+class ResourceSummaryResponse(BaseModel):
+    id: int
+    name: str
+
+
+class ResourceListResponse(BaseModel):
+    items: list[ResourceSummaryResponse]
+    total: int
+    offset: int
+    limit: int
+
+
 class BindingResponse(BaseModel):
     subject_id: int
     timestamp: int
