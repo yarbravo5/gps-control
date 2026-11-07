@@ -58,13 +58,13 @@ Roles disponibles:
 - Mapa OpenStreetMap con clustering, marcadores por estado, selección sincronizada y actualización cada 30 segundos que se pausa con la pestaña oculta.
 - Dashboard con KPIs y gráficas calculadas desde vehículos, conductores y pasajeros devueltos por Wialon.
 - CRUD de conductores y pasajeros con selección de recurso, búsqueda/paginación, custom fields y vinculación a unidades Wialon.
+- Panel Admin para usuarios/roles y reset de contraseña; vista paginada de auditoría exclusiva por permiso.
 - Aviso de arranque en frío para el plan gratuito de Render.
 - Pruebas de componentes, router, cliente HTTP y flujo de autenticación.
 
 ### Pendiente para siguientes iteraciones
 
 - Reproductor de historial de recorridos.
-- Panel frontend de usuarios y auditoría.
 - Campos personalizados de vehículos.
 - Exportación CSV (el permiso `export:csv` ya existe en el catálogo).
 - Rate limiting global adicional al bloqueo de login.
@@ -393,6 +393,6 @@ Pautas aplicadas:
 | Vehiculos y Wialon | Listado, mapa y detalle con conductor/pasajeros integrados |
 | Historial de recorridos | Backend completo; reproductor pendiente |
 | Conductores y pasajeros | CRUD, custom fields y bindings integrados |
-| Usuarios y auditoria | Backend completo; pantallas pendientes |
+| Usuarios y auditoria | Paneles conectados; auditoría de todas las mutaciones de personas/bindings pendiente |
 | Exportacion CSV | Pendiente |
 | Despliegue publico | Frontend y backend activos; los commits locales recientes aún no están desplegados |

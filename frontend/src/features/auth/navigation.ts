@@ -12,6 +12,7 @@ export const navigationItems: NavigationItem[] = [
   { label: "Pasajeros", path: "/app/passengers", permission: "passengers:view", section: "operación" },
   { label: "Historial de recorridos", path: "/app/history", permission: "history:view", section: "operación" },
   { label: "Usuarios y roles", path: "/app/admin", permission: "users:manage", section: "administración" },
+  { label: "Auditoría", path: "/app/audit", permission: "audit:view", section: "administración" },
 ];
 
 export const roleLabels = { admin: "Administrador", operator: "Operador", viewer: "Visualizador" } as const;
