@@ -14,11 +14,11 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="DATABASE_URL",
     )
-    db_host: str
+    db_host: str | None = None
     db_port: int = 5432
-    db_name: str
-    db_user: str
-    db_password: str
+    db_name: str | None = None
+    db_user: str | None = None
+    db_password: str | None = None
 
     # Security
     jwt_secret: str
@@ -62,6 +62,11 @@ class Settings(BaseSettings):
             if parsed_url.drivername.startswith("postgresql"):
                 parsed_url = parsed_url.set(drivername="postgresql+psycopg")
             return parsed_url.render_as_string(hide_password=False)
+
+        if not (self.db_host and self.db_name and self.db_user and self.db_password):
+            raise ValueError(
+                "Configura DATABASE_URL o las variables DB_HOST, DB_NAME, DB_USER y DB_PASSWORD."
+            )
 
         return URL.create(
             "postgresql+psycopg",
