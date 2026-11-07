@@ -92,6 +92,7 @@ class WialonUnitDriver:
     id: int
     name: str
     phone: str | None
+    resource_id: int | None = None
 
 
 def _finite_number(value: Any) -> float | None:

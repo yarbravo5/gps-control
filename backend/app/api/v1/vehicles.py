@@ -8,7 +8,12 @@ from app.gateways.wialon import WialonClient
 from app.gateways.wialon.exceptions import WialonIntegrationError
 from app.models import User
 from app.schemas.history import VehicleHistoryQuery, VehicleHistoryResponse
-from app.schemas.vehicle import VehicleListResponse, VehicleResponse, VehicleStatus
+from app.schemas.vehicle import (
+    VehicleDetailResponse,
+    VehicleListResponse,
+    VehicleResponse,
+    VehicleStatus,
+)
 from app.services import history_service, vehicle_service
 
 
@@ -83,4 +88,25 @@ def get_vehicle_history(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="No fue posible consultar el historial del vehículo.",
+        ) from exc
+
+
+@router.get("/{vehicle_id}", response_model=VehicleDetailResponse)
+def get_vehicle(
+    vehicle_id: int = Path(gt=0),
+    _current_user: User = Depends(require_permission("vehicles:view")),
+    gateway: WialonClient = Depends(get_wialon_gateway),
+) -> VehicleDetailResponse:
+    try:
+        detail = vehicle_service.get_vehicle_detail(gateway, vehicle_id=vehicle_id)
+        if detail is None:
+            raise HTTPException(status_code=404, detail="Vehículo no encontrado.")
+        return VehicleDetailResponse.model_validate({
+            **detail.vehicle.__dict__,
+            "drivers": [driver.__dict__ for driver in detail.drivers],
+        })
+    except WialonIntegrationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="No fue posible consultar el detalle del vehículo.",
         ) from exc

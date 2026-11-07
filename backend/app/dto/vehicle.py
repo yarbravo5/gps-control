@@ -28,3 +28,16 @@ class VehiclePageDTO:
     total: int
     offset: int
     limit: int
+
+
+@dataclass(frozen=True)
+class VehicleDriverDTO:
+    id: int
+    name: str
+    phone: str | None
+
+
+@dataclass(frozen=True)
+class VehicleDetailDTO:
+    vehicle: VehicleDTO
+    drivers: list[VehicleDriverDTO]

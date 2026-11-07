@@ -14,6 +14,16 @@ export interface Vehicle {
   status: VehicleStatus;
 }
 
+export interface VehicleDriver {
+  id: number;
+  name: string;
+  phone: string | null;
+}
+
+export interface VehicleDetail extends Vehicle {
+  drivers: VehicleDriver[];
+}
+
 export interface VehiclePage {
   items: Vehicle[];
   total: number;
@@ -57,4 +67,9 @@ export async function listAllVehicles(
   }
 
   return vehicles;
+}
+
+export async function getVehicle(vehicleId: number): Promise<VehicleDetail> {
+  const response = await httpClient.get<VehicleDetail>(`/vehicles/${vehicleId}`);
+  return response.data;
 }

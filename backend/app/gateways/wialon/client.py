@@ -393,6 +393,27 @@ class WialonClient:
         records = body.get(str(resource_id), []) if isinstance(body, dict) else []
         if not isinstance(records, list):
             raise WialonConnectionError("Respuesta inválida al consultar conductores vinculados.")
+        return self._unit_drivers_from_records(records, resource_id)
+
+    def get_unit_drivers_for_all_resources(self, unit_id: int) -> list[WialonUnitDriver]:
+        body = self._request("resource/get_unit_drivers", {"unitId": unit_id})
+        if not isinstance(body, dict):
+            raise WialonConnectionError("Respuesta inválida al consultar conductores vinculados.")
+        result = []
+        for resource_key, records in body.items():
+            try:
+                resource_id = int(resource_key)
+            except (TypeError, ValueError):
+                continue
+            if not isinstance(records, list):
+                continue
+            result.extend(self._unit_drivers_from_records(records, resource_id))
+        return result
+
+    @staticmethod
+    def _unit_drivers_from_records(
+        records: list[Any], resource_id: int | None,
+    ) -> list[WialonUnitDriver]:
         result = []
         for record in records:
             if not isinstance(record, dict):
@@ -405,6 +426,7 @@ class WialonClient:
                 id=driver_id,
                 name=record.get("nm") if isinstance(record.get("nm"), str) else "",
                 phone=record.get("ph") if isinstance(record.get("ph"), str) else None,
+                resource_id=resource_id,
             ))
         return result
 

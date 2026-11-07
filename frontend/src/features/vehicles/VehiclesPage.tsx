@@ -7,8 +7,8 @@ import { LoadingState } from "../../components/feedback/LoadingState";
 import { Button } from "../../components/ui/Button";
 import { TextField } from "../../components/ui/TextField";
 import { ApiError } from "../../services/api/apiError";
-import { listAllVehicles, listVehicles } from "./vehiclesApi";
-import type { Vehicle, VehicleStatus } from "./vehiclesApi";
+import { getVehicle, listAllVehicles, listVehicles } from "./vehiclesApi";
+import type { Vehicle, VehicleDetail, VehicleStatus } from "./vehiclesApi";
 
 const FleetMap = lazy(() => import("./FleetMap").then((module) => ({ default: module.FleetMap })));
 
@@ -56,6 +56,11 @@ export function VehiclesPage() {
     queryFn: () => listAllVehicles({ query, status }),
     refetchInterval: () => getVehiclePollingInterval(document.visibilityState),
     refetchIntervalInBackground: false,
+  });
+  const detailQuery = useQuery({
+    queryKey: ["vehicle-detail", selectedVehicleId],
+    queryFn: () => getVehicle(selectedVehicleId as number),
+    enabled: selectedVehicleId !== null,
   });
 
   useEffect(() => {
@@ -140,7 +145,13 @@ export function VehiclesPage() {
           </Suspense>
         ) : null}
         {selectedVehicleId !== null ? (
-          <SelectedVehicle vehicle={fleet.find((vehicle) => vehicle.id === selectedVehicleId) ?? null} />
+          <SelectedVehicle
+            detail={detailQuery.data}
+            error={detailQuery.isError}
+            isLoading={detailQuery.isPending}
+            onRetry={() => void detailQuery.refetch()}
+            vehicle={fleet.find((vehicle) => vehicle.id === selectedVehicleId) ?? null}
+          />
         ) : (
           <p className="self-center px-2 text-sm text-muted">Selecciona un marcador o vehículo para sincronizar su ubicación.</p>
         )}
@@ -226,7 +237,19 @@ function VehicleDetail({ label, value }: { label: string; value: string }) {
   return <dl className="m-0 grid gap-1 text-sm"><dt className="text-xs font-medium text-muted">{label}</dt><dd className="m-0 break-words text-slate-800">{value}</dd></dl>;
 }
 
-function SelectedVehicle({ vehicle }: { vehicle: Vehicle | null }) {
+function SelectedVehicle({
+  vehicle,
+  detail,
+  error,
+  isLoading,
+  onRetry,
+}: {
+  vehicle: Vehicle | null;
+  detail: VehicleDetail | undefined;
+  error: boolean;
+  isLoading: boolean;
+  onRetry: () => void;
+}) {
   if (!vehicle) {
     return <p className="self-center px-2 text-sm text-muted">El vehículo seleccionado ya no aparece en los resultados actuales.</p>;
   }
@@ -236,7 +259,24 @@ function SelectedVehicle({ vehicle }: { vehicle: Vehicle | null }) {
       <h2 className="text-lg font-semibold text-slate-950">{vehicle.name}</h2>
       <p className="text-sm text-muted">{statusLabels[vehicle.status]} · {vehicle.speed_kmh === null ? "Velocidad sin dato" : `${vehicle.speed_kmh} km/h`}</p>
       <p className="text-sm text-muted">{vehicle.latitude === null || vehicle.longitude === null ? "Sin posición válida" : `${vehicle.latitude.toFixed(5)}, ${vehicle.longitude.toFixed(5)}`}</p>
-      <p className="text-sm text-muted">Conductor asignado: consulta no disponible todavía.</p>
+      {isLoading ? <p aria-live="polite" className="text-sm text-muted">Consultando conductor vinculado…</p> : null}
+      {error ? (
+        <div className="grid justify-items-start gap-2">
+          <p className="text-sm text-wine-dark" role="alert">No fue posible consultar el conductor asignado.</p>
+          <Button onClick={onRetry} variant="secondary">Reintentar</Button>
+        </div>
+      ) : null}
+      {detail && detail.drivers.length > 0 ? (
+        <div className="grid gap-1 text-sm">
+          <h3 className="font-semibold text-slate-900">Conductor asignado</h3>
+          {detail.drivers.map((driver) => (
+            <p className="m-0 text-muted" key={`${driver.id}-${driver.name}`}>
+              {driver.name}{driver.phone ? ` · ${driver.phone}` : ""}
+            </p>
+          ))}
+        </div>
+      ) : null}
+      {detail && detail.drivers.length === 0 ? <p className="text-sm text-muted">No hay conductor vinculado a este vehículo.</p> : null}
     </aside>
   );
 }

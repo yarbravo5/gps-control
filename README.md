@@ -62,7 +62,7 @@ Roles disponibles:
 ### Pendiente para siguientes iteraciones
 
 - Dashboard con métricas de flota.
-- Ficha de vehículo con conductor/pasajeros vinculados; el mapa y la sincronización de selección ya están integrados.
+- Listado de pasajeros asignados dentro de la ficha de vehículo; el conductor vinculado ya se consulta desde Wialon.
 - Reproductor de historial de recorridos.
 - Pantallas CRUD de conductores y pasajeros.
 - Panel de usuarios y auditoría en el frontend.
@@ -389,7 +389,7 @@ Pautas aplicadas:
 | --- | --- |
 | Autenticacion y sesiones | Completo en backend y frontend |
 | RBAC y permisos | Completo en backend; guards en frontend |
-| Vehiculos y Wialon | Listado y mapa integrados; detalle con conductor asignado pendiente |
+| Vehiculos y Wialon | Listado, mapa y detalle con conductor integrados; pasajeros en detalle pendientes |
 | Historial de recorridos | Backend completo; reproductor pendiente |
 | Conductores y pasajeros | Backend completo; pantallas pendientes |
 | Usuarios y auditoria | Backend completo; pantallas pendientes |

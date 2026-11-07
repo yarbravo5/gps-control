@@ -23,3 +23,13 @@ class VehicleListResponse(BaseModel):
     total: int
     offset: int
     limit: int
+
+
+class VehicleDriverResponse(BaseModel):
+    id: int
+    name: str
+    phone: str | None
+
+
+class VehicleDetailResponse(VehicleResponse):
+    drivers: list[VehicleDriverResponse]

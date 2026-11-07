@@ -3,8 +3,8 @@ from typing import Protocol
 
 from app.core.config import settings
 from app.core.time import get_current_utc_datetime
-from app.dto.vehicle import VehiclePageDTO, VehicleStatus
-from app.gateways.wialon.dto import WialonUnitSearchResult
+from app.dto.vehicle import VehicleDetailDTO, VehicleDriverDTO, VehiclePageDTO, VehicleStatus
+from app.gateways.wialon.dto import WialonUnit, WialonUnitDriver, WialonUnitSearchResult
 from app.mappers.vehicle_mapper import map_vehicle
 
 
@@ -12,6 +12,9 @@ class VehicleGateway(Protocol):
     def search_items(
         self, query: str | None, offset: int, limit: int
     ) -> WialonUnitSearchResult: ...
+
+    def search_item(self, unit_id: int) -> WialonUnit | None: ...
+    def get_unit_drivers_for_all_resources(self, unit_id: int) -> list[WialonUnitDriver]: ...
 
 
 def list_vehicles(
@@ -75,3 +78,27 @@ def list_vehicles(
         offset=offset,
         limit=limit,
     )
+
+
+def get_vehicle_detail(
+    gateway: VehicleGateway,
+    *,
+    vehicle_id: int,
+    now: datetime | None = None,
+) -> VehicleDetailDTO | None:
+    unit = gateway.search_item(vehicle_id)
+    if unit is None:
+        return None
+    current_time = now or get_current_utc_datetime()
+    if current_time.tzinfo is None:
+        current_time = current_time.replace(tzinfo=timezone.utc)
+    vehicle = map_vehicle(
+        unit,
+        now=current_time,
+        no_signal_after_seconds=settings.wialon_no_signal_after_seconds,
+    )
+    drivers = [
+        VehicleDriverDTO(id=driver.id, name=driver.name, phone=driver.phone)
+        for driver in gateway.get_unit_drivers_for_all_resources(vehicle_id)
+    ]
+    return VehicleDetailDTO(vehicle=vehicle, drivers=drivers)

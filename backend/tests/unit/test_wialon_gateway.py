@@ -216,6 +216,28 @@ def test_people_list_and_detail_parse_wialon_resource_without_raw_payloads() -> 
     assert requested[1]["flags"] == WialonClient.RESOURCE_PASSENGER_FLAGS
 
 
+def test_unit_driver_lookup_aggregates_resources_and_ignores_invalid_records() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        data = form(request)
+        if data["svc"] == "token/login":
+            return httpx.Response(200, json={"eid": "mock-session"})
+        assert data["svc"] == "resource/get_unit_drivers"
+        assert json.loads(data["params"]) == {"unitId": 42}
+        return httpx.Response(200, json={
+            "20": [{"id": 7, "nm": "Ana", "ph": "555"}, {"id": "invalid"}],
+            "21": [{"id": 8, "nm": "Luis"}],
+            "bad-resource": [{"id": 9, "nm": "Ignorado"}],
+        })
+
+    client = make_client(handler)
+    drivers = client.get_unit_drivers_for_all_resources(42)
+
+    assert [(driver.resource_id, driver.id, driver.name, driver.phone) for driver in drivers] == [
+        (20, 7, "Ana", "555"),
+        (21, 8, "Luis", None),
+    ]
+
+
 def test_load_vehicle_history_uses_limited_interval_and_maps_dto() -> None:
     calls = []
 
