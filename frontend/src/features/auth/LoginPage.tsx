@@ -5,12 +5,14 @@ import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import { Button } from "../../components/ui/Button";
-import { Card } from "../../components/ui/Card";
 import { TextField } from "../../components/ui/TextField";
 import { ApiError } from "../../services/api/apiError";
 import { useAuth } from "./AuthProvider";
 
-const schema = z.object({ email: z.email("Ingresa un correo válido."), password: z.string().min(1, "Ingresa tu contraseña.").max(128, "La contraseña es demasiado larga.") });
+const schema = z.object({
+  email: z.email("Ingresa un correo válido."),
+  password: z.string().min(1, "Ingresa tu contraseña.").max(128, "La contraseña es demasiado larga."),
+});
 type FormValues = z.infer<typeof schema>;
 
 export function LoginPage() {
@@ -42,18 +44,38 @@ export function LoginPage() {
     }
   });
 
-  return <main className="grid min-h-screen place-items-center bg-slate-50 px-4 py-10">
-    <Card className="w-full max-w-md" title="Iniciar sesión">
-      <p className="mb-6 text-sm text-muted">Ingresa con tus credenciales de GPS Control.</p>
-      {notice ? <p className="mb-4 text-sm text-teal-900" role="status">{notice}</p> : null}
-      <form className="grid gap-5" onSubmit={onSubmit} noValidate>
-        <TextField autoComplete="username" error={errors.email?.message} label="Correo electrónico" type="email" {...register("email")} />
-        <TextField autoComplete="current-password" error={errors.password?.message} label="Contraseña" type="password" {...register("password")} />
-        {formError ? <p className="text-sm text-wine-dark" role="alert">{formError}</p> : null}
-        {showColdStart ? <p className="text-sm text-muted" role="status">El servidor gratuito está iniciando. Esto puede tardar hasta un minuto.</p> : null}
-        <Button disabled={isSubmitting} type="submit">{isSubmitting ? "Ingresando…" : "Ingresar"}</Button>
-      </form>
-      <Link className="mt-5 inline-block rounded text-sm text-teal-900 underline focus-visible:outline-2 focus-visible:outline-brand-teal" to="/">Volver a inicio</Link>
-    </Card>
-  </main>;
+  return (
+    <main className="login-screen">
+      <section aria-label="Acceso a GPS Control" className="login-panel">
+        <div aria-label="GPS Control: monitoreo para cada recorrido" className="login-visual">
+          <div className="login-visual__brand" aria-label="GPS Control">
+            <span className="login-visual__mark" aria-hidden="true">G</span>
+            <span>GPS <strong>CONTROL</strong></span>
+          </div>
+          <div className="login-visual__glow" aria-hidden="true" />
+          <img alt="" aria-hidden="true" className="login-passenger" src="/images/login-driver-profile.svg" />
+          <p className="login-visual__caption">Cada recorrido, más cerca.</p>
+          <span className="login-visual__line" aria-hidden="true" />
+        </div>
+
+        <div className="login-form-side">
+          <div className="login-form-wrap">
+            <p className="login-eyebrow">GPS CONTROL</p>
+            <h1 id="login-title">Hola de nuevo</h1>
+            <p className="login-intro">Ingresa a tu cuenta para continuar.</p>
+            {notice ? <p className="login-notice" role="status">{notice}</p> : null}
+            <form className="login-form" onSubmit={onSubmit} noValidate aria-labelledby="login-title">
+              <TextField autoComplete="username" error={errors.email?.message} label="Correo electrónico" type="email" placeholder="nombre@empresa.com" {...register("email")} />
+              <TextField autoComplete="current-password" error={errors.password?.message} label="Contraseña" type="password" placeholder="Ingresa tu contraseña" {...register("password")} />
+              {formError ? <p className="login-error" role="alert">{formError}</p> : null}
+              {showColdStart ? <p className="login-hint" role="status">El servidor gratuito está iniciando. Esto puede tardar hasta un minuto.</p> : null}
+              <Button className="login-submit" disabled={isSubmitting} type="submit">{isSubmitting ? "Ingresando…" : "Ingresar"}</Button>
+            </form>
+            <p className="login-back"><Link to="/">Volver a inicio</Link></p>
+          </div>
+          <p className="login-form-footer">Seguimiento claro para una operación en movimiento.</p>
+        </div>
+      </section>
+    </main>
+  );
 }

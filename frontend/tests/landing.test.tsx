@@ -56,7 +56,7 @@ describe("landing pública", () => {
     expect(screen.getByRole("contentinfo")).toBeVisible();
     expect(screen.getAllByRole("link", { name: "Iniciar sesión" })).toHaveLength(1);
     await user.click(screen.getAllByRole("link", { name: "Iniciar sesión" })[0]);
-    expect(await screen.findByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Hola de nuevo" })).toBeVisible();
   });
 
   it("permite desplegar los enlaces de la landing con el control móvil", async () => {

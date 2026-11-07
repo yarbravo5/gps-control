@@ -23,6 +23,8 @@ htmlcov/
 playwright-report/
 test-results/
 .qa-*.png
+.qa-*/
+.qa-*.html
 
 # Deploy
 .vercel/

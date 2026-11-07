@@ -72,7 +72,7 @@ describe("autenticación y autorización", () => {
     await user.type(screen.getByLabelText("Confirma la nueva contraseña"), "BetterPass456");
     await user.click(screen.getByRole("button", { name: "Actualizar contraseña" }));
     await waitFor(() => expect(api.changePasswordRequest).toHaveBeenCalledWith({ current_password: "Secret123", new_password: "BetterPass456" }));
-    expect(await screen.findByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Hola de nuevo" })).toBeVisible();
   });
 
   it("abre y cierra el menú móvil del shell con teclado y botón accesible", async () => {
