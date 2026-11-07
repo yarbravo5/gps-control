@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 
 import { EmptyState } from "../../components/feedback/EmptyState";
 import { ErrorState } from "../../components/feedback/ErrorState";
@@ -7,10 +7,19 @@ import { LoadingState } from "../../components/feedback/LoadingState";
 import { Button } from "../../components/ui/Button";
 import { TextField } from "../../components/ui/TextField";
 import { ApiError } from "../../services/api/apiError";
-import { listVehicles } from "./vehiclesApi";
+import { listAllVehicles, listVehicles } from "./vehiclesApi";
 import type { Vehicle, VehicleStatus } from "./vehiclesApi";
 
+const FleetMap = lazy(() => import("./FleetMap").then((module) => ({ default: module.FleetMap })));
+
 const PAGE_SIZE = 20;
+const LIVE_REFRESH_INTERVAL_MS = 30_000;
+
+export function getVehiclePollingInterval(
+  visibilityState: DocumentVisibilityState,
+): number | false {
+  return visibilityState === "visible" ? LIVE_REFRESH_INTERVAL_MS : false;
+}
 
 const statusLabels: Record<VehicleStatus, string> = {
   moving: "En movimiento",
@@ -35,10 +44,29 @@ export function VehiclesPage() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<VehicleStatus | "">("");
   const [offset, setOffset] = useState(0);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
   const vehiclesQuery = useQuery({
     queryKey: ["vehicles", query, status, offset],
     queryFn: () => listVehicles({ query, status, offset, limit: PAGE_SIZE }),
+    refetchInterval: () => getVehiclePollingInterval(document.visibilityState),
+    refetchIntervalInBackground: false,
   });
+  const fleetQuery = useQuery({
+    queryKey: ["vehicle-map", query, status],
+    queryFn: () => listAllVehicles({ query, status }),
+    refetchInterval: () => getVehiclePollingInterval(document.visibilityState),
+    refetchIntervalInBackground: false,
+  });
+
+  useEffect(() => {
+    const refreshVisibleFleet = () => {
+      if (document.visibilityState === "visible") {
+        void Promise.all([fleetQuery.refetch(), vehiclesQuery.refetch()]);
+      }
+    };
+    document.addEventListener("visibilitychange", refreshVisibleFleet);
+    return () => document.removeEventListener("visibilitychange", refreshVisibleFleet);
+  }, [fleetQuery.refetch, vehiclesQuery.refetch]);
 
   const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -47,8 +75,15 @@ export function VehiclesPage() {
   };
 
   const page = vehiclesQuery.data;
+  const fleet = fleetQuery.data ?? [];
   const firstItem = page && page.total > 0 ? page.offset + 1 : 0;
   const lastItem = page ? Math.min(page.offset + page.items.length, page.total) : 0;
+
+  const selectVehicle = (vehicleId: number) => {
+    setSelectedVehicleId(vehicleId);
+    const selectedIndex = fleet.findIndex((vehicle) => vehicle.id === vehicleId);
+    if (selectedIndex >= 0) setOffset(Math.floor(selectedIndex / PAGE_SIZE) * PAGE_SIZE);
+  };
 
   return (
     <section className="grid gap-6" aria-labelledby="vehicles-title">
@@ -87,6 +122,30 @@ export function VehiclesPage() {
         <Button type="submit">Buscar</Button>
       </form>
 
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.8fr)]">
+        {fleetQuery.isPending ? <LoadingState label="Cargando posiciones de la flota" /> : null}
+        {fleetQuery.isError ? (
+          <ErrorState
+            description="No fue posible actualizar las posiciones. La lista de vehículos sigue disponible."
+            onRetry={() => void fleetQuery.refetch()}
+          />
+        ) : null}
+        {fleetQuery.data ? (
+          <Suspense fallback={<LoadingState label="Preparando mapa de la flota" />}>
+            <FleetMap
+              onSelectVehicle={selectVehicle}
+              selectedVehicleId={selectedVehicleId}
+              vehicles={fleet}
+            />
+          </Suspense>
+        ) : null}
+        {selectedVehicleId !== null ? (
+          <SelectedVehicle vehicle={fleet.find((vehicle) => vehicle.id === selectedVehicleId) ?? null} />
+        ) : (
+          <p className="self-center px-2 text-sm text-muted">Selecciona un marcador o vehículo para sincronizar su ubicación.</p>
+        )}
+      </div>
+
       {vehiclesQuery.isPending ? <LoadingState label="Consultando vehículos" hint="El servicio puede tardar unos segundos en iniciar." /> : null}
       {vehiclesQuery.isError ? (
         <ErrorState
@@ -103,7 +162,14 @@ export function VehiclesPage() {
       {page && page.items.length > 0 ? (
         <>
           <ul aria-label="Vehículos encontrados" className="grid list-none gap-3 p-0">
-            {page.items.map((vehicle) => <VehicleItem key={vehicle.id} vehicle={vehicle} />)}
+            {page.items.map((vehicle) => (
+              <VehicleItem
+                key={vehicle.id}
+                onSelect={() => selectVehicle(vehicle.id)}
+                selected={vehicle.id === selectedVehicleId}
+                vehicle={vehicle}
+              />
+            ))}
           </ul>
           <nav aria-label="Paginación de vehículos" className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
             <p aria-live="polite" className="text-sm text-muted">Mostrando {firstItem}–{lastItem} de {page.total}</p>
@@ -118,7 +184,15 @@ export function VehiclesPage() {
   );
 }
 
-function VehicleItem({ vehicle }: { vehicle: Vehicle }) {
+function VehicleItem({
+  vehicle,
+  selected,
+  onSelect,
+}: {
+  vehicle: Vehicle;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   const coordinates = vehicle.latitude !== null && vehicle.longitude !== null
     ? `${vehicle.latitude.toFixed(5)}, ${vehicle.longitude.toFixed(5)}`
     : "Sin posición reportada";
@@ -127,13 +201,18 @@ function VehicleItem({ vehicle }: { vehicle: Vehicle }) {
     : "Sin comunicación registrada";
 
   return (
-    <li className="rounded-card border border-slate-200 bg-white p-4 sm:p-5">
+    <li className={`rounded-card border bg-white p-4 sm:p-5 ${selected ? "border-brand-teal ring-2 ring-brand-teal/20" : "border-slate-200"}`}>
       <article aria-label={vehicle.name} className="grid gap-4 sm:grid-cols-[minmax(12rem,1fr)_repeat(3,minmax(8rem,auto))] sm:items-center">
-        <div className="grid min-w-0 gap-2">
-          <h2 className="truncate font-semibold text-slate-950">{vehicle.name}</h2>
-          <span className={`w-fit rounded-full border px-2.5 py-1 text-xs font-semibold ${statusStyles[vehicle.status]}`}>
-            {statusLabels[vehicle.status]}
-          </span>
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <div className="grid min-w-0 gap-2">
+            <h2 className="truncate font-semibold text-slate-950">{vehicle.name}</h2>
+            <span className={`w-fit rounded-full border px-2.5 py-1 text-xs font-semibold ${statusStyles[vehicle.status]}`}>
+              {statusLabels[vehicle.status]}
+            </span>
+          </div>
+          <Button aria-pressed={selected} className="shrink-0 px-3 text-xs" onClick={onSelect} variant={selected ? "primary" : "secondary"}>
+            {selected ? "Seleccionado" : "Ubicar"}
+          </Button>
         </div>
         <VehicleDetail label="Posición" value={coordinates} />
         <VehicleDetail label="Velocidad" value={vehicle.speed_kmh === null ? "Sin dato" : `${vehicle.speed_kmh} km/h`} />
@@ -145,4 +224,19 @@ function VehicleItem({ vehicle }: { vehicle: Vehicle }) {
 
 function VehicleDetail({ label, value }: { label: string; value: string }) {
   return <dl className="m-0 grid gap-1 text-sm"><dt className="text-xs font-medium text-muted">{label}</dt><dd className="m-0 break-words text-slate-800">{value}</dd></dl>;
+}
+
+function SelectedVehicle({ vehicle }: { vehicle: Vehicle | null }) {
+  if (!vehicle) {
+    return <p className="self-center px-2 text-sm text-muted">El vehículo seleccionado ya no aparece en los resultados actuales.</p>;
+  }
+  return (
+    <aside aria-label="Detalle del vehículo seleccionado" aria-live="polite" className="grid content-start gap-3 border-y border-slate-200 py-4 xl:border-y-0 xl:border-l xl:pl-5">
+      <p className="eyebrow">Vehículo seleccionado</p>
+      <h2 className="text-lg font-semibold text-slate-950">{vehicle.name}</h2>
+      <p className="text-sm text-muted">{statusLabels[vehicle.status]} · {vehicle.speed_kmh === null ? "Velocidad sin dato" : `${vehicle.speed_kmh} km/h`}</p>
+      <p className="text-sm text-muted">{vehicle.latitude === null || vehicle.longitude === null ? "Sin posición válida" : `${vehicle.latitude.toFixed(5)}, ${vehicle.longitude.toFixed(5)}`}</p>
+      <p className="text-sm text-muted">Conductor asignado: consulta no disponible todavía.</p>
+    </aside>
+  );
 }

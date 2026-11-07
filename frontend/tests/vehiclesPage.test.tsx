@@ -5,11 +5,37 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "../src/services/api/apiError";
 import { httpClient } from "../src/services/api/httpClient";
-import { VehiclesPage } from "../src/features/vehicles/VehiclesPage";
-import type { VehiclePage } from "../src/features/vehicles/vehiclesApi";
+import { getVehiclePollingInterval, VehiclesPage } from "../src/features/vehicles/VehiclesPage";
+import { listAllVehicles } from "../src/features/vehicles/vehiclesApi";
+import type { Vehicle, VehiclePage } from "../src/features/vehicles/vehiclesApi";
 
 vi.mock("../src/services/api/httpClient", () => ({
   httpClient: { get: vi.fn() },
+}));
+
+vi.mock("../src/features/vehicles/FleetMap", () => ({
+  FleetMap: ({
+    vehicles,
+    onSelectVehicle,
+    selectedVehicleId,
+  }: {
+    vehicles: Vehicle[];
+    onSelectVehicle: (vehicleId: number) => void;
+    selectedVehicleId: number | null;
+  }) => (
+    <div aria-label="Mapa de prueba">
+      {vehicles.map((vehicle) => (
+        <button
+          aria-pressed={vehicle.id === selectedVehicleId}
+          key={vehicle.id}
+          onClick={() => onSelectVehicle(vehicle.id)}
+          type="button"
+        >
+          Mapa {vehicle.name}
+        </button>
+      ))}
+    </div>
+  ),
 }));
 
 const getVehicles = vi.mocked(httpClient.get);
@@ -40,6 +66,34 @@ const sampleVehicle = {
 describe("VehiclesPage", () => {
   beforeEach(() => getVehicles.mockReset());
 
+  it("pausa el polling en segundo plano y refresca cada 30 segundos visible", () => {
+    expect(getVehiclePollingInterval("visible")).toBe(30_000);
+    expect(getVehiclePollingInterval("hidden")).toBe(false);
+  });
+
+  it("recupera todas las páginas de la flota para dibujar el mapa", async () => {
+    getVehicles.mockImplementation((_url, config) => {
+      const params = config?.params as { offset?: number } | undefined;
+      const offset = params?.offset ?? 0;
+      const items = Array.from({ length: offset === 0 ? 100 : 1 }, (_, index) => ({
+        ...sampleVehicle,
+        id: offset + index + 1,
+        name: `Vehículo ${offset + index + 1}`,
+      }));
+      return Promise.resolve({ data: page(items, 101, offset) }) as never;
+    });
+
+    const vehicles = await listAllVehicles({ query: "", status: "" });
+
+    expect(vehicles).toHaveLength(101);
+    expect(getVehicles).toHaveBeenNthCalledWith(1, "/vehicles", {
+      params: { offset: 0, limit: 100 },
+    });
+    expect(getVehicles).toHaveBeenNthCalledWith(2, "/vehicles", {
+      params: { offset: 100, limit: 100 },
+    });
+  });
+
   it("muestra datos normalizados y fecha en la zona horaria de Bogotá", async () => {
     getVehicles.mockResolvedValue({ data: page([sampleVehicle]) } as never);
     renderPage();
@@ -54,9 +108,10 @@ describe("VehiclesPage", () => {
   it("envía búsqueda, estado y página al servidor", async () => {
     const user = userEvent.setup();
     getVehicles.mockImplementation((_url, config) => {
-      const params = config?.params as { offset?: number } | undefined;
+      const params = config?.params as { limit?: number; offset?: number } | undefined;
+      const total = params?.limit === 100 ? 1 : 45;
       return Promise.resolve({
-        data: page([sampleVehicle], 45, Number(params?.offset ?? 0)),
+        data: page([sampleVehicle], total, Number(params?.offset ?? 0)),
       }) as never;
     });
     renderPage();
@@ -66,12 +121,12 @@ describe("VehiclesPage", () => {
     await user.click(screen.getByRole("button", { name: "Buscar" }));
     await user.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "moving");
 
-    await waitFor(() => expect(getVehicles).toHaveBeenLastCalledWith("/vehicles", {
+    await waitFor(() => expect(getVehicles).toHaveBeenCalledWith("/vehicles", {
       params: { q: "Camión", status: "moving", offset: 0, limit: 20 },
     }));
     await user.click(screen.getByRole("button", { name: "Siguiente" }));
 
-    await waitFor(() => expect(getVehicles).toHaveBeenLastCalledWith("/vehicles", {
+    await waitFor(() => expect(getVehicles).toHaveBeenCalledWith("/vehicles", {
       params: { q: "Camión", status: "moving", offset: 20, limit: 20 },
     }));
   });
@@ -84,14 +139,44 @@ describe("VehiclesPage", () => {
   });
 
   it("ofrece reintentar cuando la API falla", async () => {
-    getVehicles
-      .mockRejectedValueOnce(new ApiError("Servicio no disponible", "network"))
-      .mockResolvedValue({ data: page([sampleVehicle]) } as never);
+    getVehicles.mockImplementation((_url, config) => {
+      const params = config?.params as { limit?: number } | undefined;
+      if (params?.limit === 100 && getVehicles.mock.calls.filter(([, request]) =>
+        (request?.params as { limit?: number } | undefined)?.limit === 100,
+      ).length === 1) {
+        return Promise.reject(new ApiError("Servicio no disponible", "network")) as never;
+      }
+      return Promise.resolve({ data: page([sampleVehicle]) }) as never;
+    });
     renderPage();
 
     expect(await screen.findByRole("alert")).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
-    expect(await screen.findByRole("article", { name: "Camión norte" })).toBeVisible();
-    await waitFor(() => expect(getVehicles).toHaveBeenCalledTimes(2));
+    expect(await screen.findByRole("button", { name: "Mapa Camión norte" })).toBeVisible();
+    await waitFor(() => expect(getVehicles.mock.calls.length).toBeGreaterThanOrEqual(3));
+  });
+
+  it("sincroniza la selección del mapa con el vehículo y su página", async () => {
+    const user = userEvent.setup();
+    const allVehicles = Array.from({ length: 21 }, (_, index) => ({
+      ...sampleVehicle,
+      id: index + 1,
+      name: index === 0 ? "Camión norte" : `Vehículo ${index + 1}`,
+    }));
+    getVehicles.mockImplementation((_url, config) => {
+      const params = config?.params as { limit?: number; offset?: number } | undefined;
+      const offset = params?.offset ?? 0;
+      const items = params?.limit === 100
+        ? allVehicles
+        : allVehicles.slice(offset, offset + 20);
+      return Promise.resolve({ data: page(items, allVehicles.length, offset) }) as never;
+    });
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Mapa Camión norte" }));
+
+    const selectedVehicle = screen.getByRole("complementary", { name: "Detalle del vehículo seleccionado" });
+    expect(within(selectedVehicle).getByRole("heading", { name: "Camión norte" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Mapa Camión norte" })).toHaveAttribute("aria-pressed", "true");
   });
 });

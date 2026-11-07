@@ -55,13 +55,14 @@ Roles disponibles:
 - Guards de autenticación y autorización por permisos.
 - Shell de aplicación con navegación responsive y accesible.
 - Listado de vehículos conectado al API con búsqueda, filtros por estado y paginación del servidor.
+- Mapa OpenStreetMap con clustering, marcadores por estado, selección sincronizada y actualización cada 30 segundos que se pausa con la pestaña oculta.
 - Aviso de arranque en frío para el plan gratuito de Render.
 - Pruebas de componentes, router, cliente HTTP y flujo de autenticación.
 
 ### Pendiente para siguientes iteraciones
 
 - Dashboard con métricas de flota.
-- Mapa en tiempo real, ficha de vehículo y sincronización de selección.
+- Ficha de vehículo con conductor/pasajeros vinculados; el mapa y la sincronización de selección ya están integrados.
 - Reproductor de historial de recorridos.
 - Pantallas CRUD de conductores y pasajeros.
 - Panel de usuarios y auditoría en el frontend.
@@ -388,7 +389,7 @@ Pautas aplicadas:
 | --- | --- |
 | Autenticacion y sesiones | Completo en backend y frontend |
 | RBAC y permisos | Completo en backend; guards en frontend |
-| Vehiculos y Wialon | Backend completo; listado integrado en frontend, mapa y detalle pendientes |
+| Vehiculos y Wialon | Listado y mapa integrados; detalle con conductor asignado pendiente |
 | Historial de recorridos | Backend completo; reproductor pendiente |
 | Conductores y pasajeros | Backend completo; pantallas pendientes |
 | Usuarios y auditoria | Backend completo; pantallas pendientes |

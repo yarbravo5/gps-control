@@ -39,3 +39,22 @@ export async function listVehicles(filters: VehicleFilters): Promise<VehiclePage
   });
   return response.data;
 }
+
+export async function listAllVehicles(
+  filters: Pick<VehicleFilters, "query" | "status">,
+): Promise<Vehicle[]> {
+  const vehicles: Vehicle[] = [];
+  const limit = 100;
+  let offset = 0;
+  let total = Number.POSITIVE_INFINITY;
+
+  while (offset < total) {
+    const page = await listVehicles({ ...filters, offset, limit });
+    vehicles.push(...page.items);
+    total = page.total;
+    if (page.items.length === 0) break;
+    offset += page.items.length;
+  }
+
+  return vehicles;
+}
