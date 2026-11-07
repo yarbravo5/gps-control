@@ -92,6 +92,21 @@ def test_driver_custom_field_patch_merges_without_deleting_unmentioned_fields():
     assert gateway.calls[-1][3]["custom_fields"] == {"area": "sur", "tipo": "fijo"}
 
 
+def test_driver_custom_field_patch_fails_closed_when_jp_was_not_returned():
+    gateway = FakeGateway()
+    gateway.driver = driver(
+        available_fields=frozenset({"id", "n", "c", "ds", "p", "pwd", "f", "bu"})
+    )
+
+    with pytest.raises(service.UnsafePartialUpdateError):
+        service.update_driver(
+            gateway, resource_id=2, driver_id=7,
+            changes={"custom_fields": {"area": "sur"}},
+        )
+
+    assert gateway.calls == []
+
+
 def test_passenger_patch_preserves_jp_and_requires_explicit_phone():
     with pytest.raises(ValueError):
         PassengerUpdate(name="Luis")

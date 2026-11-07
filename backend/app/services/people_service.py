@@ -86,11 +86,16 @@ def update_driver(
             "Para preservar la contraseña móvil, inclúyela explícitamente en la actualización."
         )
 
+    should_update_custom = "custom_fields" in changes or "remove_custom_fields" in changes
+    if should_update_custom and "jp" not in current.available_fields:
+        raise UnsafePartialUpdateError(
+            "Wialon no devolvió los campos personalizados actuales del conductor."
+        )
+
     custom_fields = dict(current.custom_fields)
     custom_fields.update(changes.get("custom_fields", {}))
     for field_name in changes.get("remove_custom_fields", []):
         custom_fields.pop(field_name, None)
-    should_update_custom = "custom_fields" in changes or "remove_custom_fields" in changes
 
     updated = gateway.update_driver(
         resource_id,
