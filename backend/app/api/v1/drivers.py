@@ -29,6 +29,10 @@ def _raise_people_error(exc: Exception) -> HTTPException:
         return HTTPException(status_code=404, detail=str(exc))
     if isinstance(exc, people_service.PersonAlreadyBoundError):
         return HTTPException(status_code=409, detail=str(exc))
+    if isinstance(exc, people_service.BindingConflictError):
+        return HTTPException(status_code=409, detail=str(exc))
+    if isinstance(exc, people_service.VehicleNotFoundError):
+        return HTTPException(status_code=404, detail=str(exc))
     if isinstance(exc, people_service.UnsafePartialUpdateError):
         return HTTPException(status_code=409, detail=str(exc))
     if isinstance(exc, people_service.InvalidAutomaticUnitUpdateError):

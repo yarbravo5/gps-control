@@ -11,6 +11,7 @@ from app.mappers.people_mapper import map_binding, map_driver, map_passenger
 
 
 class PeopleGateway(Protocol):
+    def search_item(self, unit_id: int): ...
     def list_drivers(self, resource_id: int, query: str | None, offset: int, limit: int): ...
     def get_driver(self, resource_id: int, driver_id: int): ...
     def create_driver(self, resource_id: int, **fields): ...
@@ -36,6 +37,14 @@ class PersonNotFoundError(Exception):
 
 
 class PersonAlreadyBoundError(Exception):
+    pass
+
+
+class VehicleNotFoundError(Exception):
+    pass
+
+
+class BindingConflictError(Exception):
     pass
 
 
@@ -139,8 +148,21 @@ def bind_driver(
     gateway: PeopleGateway, *, resource_id: int, driver_id: int,
     unit_id: int, bind: bool, time: int = 0,
 ) -> None:
-    if gateway.get_driver(resource_id, driver_id) is None:
+    current = gateway.get_driver(resource_id, driver_id)
+    if current is None:
         raise PersonNotFoundError("Conductor no encontrado.")
+    if "bu" not in current.available_fields:
+        raise UnsafePartialUpdateError(
+            "Wialon no confirmó la unidad vinculada del conductor; se canceló el cambio."
+        )
+    if gateway.search_item(unit_id) is None:
+        raise VehicleNotFoundError("Vehículo no encontrado.")
+    if bind and current.bound_unit_id is not None:
+        raise PersonAlreadyBoundError(
+            "Desvincula el conductor de su vehículo actual antes de asignarlo a otro."
+        )
+    if not bind and current.bound_unit_id != unit_id:
+        raise BindingConflictError("El conductor no está vinculado a este vehículo.")
     gateway.bind_driver(resource_id, driver_id, unit_id, bind=bind, time=time)
 
 
@@ -270,8 +292,21 @@ def bind_passenger(
     gateway: PeopleGateway, *, resource_id: int, passenger_id: int,
     unit_id: int, bind: bool, time: int = 0,
 ) -> None:
-    if gateway.get_passenger(resource_id, passenger_id) is None:
+    current = gateway.get_passenger(resource_id, passenger_id)
+    if current is None:
         raise PersonNotFoundError("Pasajero no encontrado.")
+    if "bu" not in current.available_fields:
+        raise UnsafePartialUpdateError(
+            "Wialon no confirmó el vehículo vinculado del pasajero; se canceló el cambio."
+        )
+    if gateway.search_item(unit_id) is None:
+        raise VehicleNotFoundError("Vehículo no encontrado.")
+    if bind and current.bound_unit_id is not None:
+        raise PersonAlreadyBoundError(
+            "Desvincula el pasajero de su vehículo actual antes de asignarlo a otro."
+        )
+    if not bind and current.bound_unit_id != unit_id:
+        raise BindingConflictError("El pasajero no está vinculado a este vehículo.")
     gateway.bind_passenger(resource_id, passenger_id, unit_id, bind=bind, time=time)
 
 

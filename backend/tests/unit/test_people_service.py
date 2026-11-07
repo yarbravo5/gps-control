@@ -1,6 +1,6 @@
 import pytest
 
-from app.gateways.wialon.dto import WialonDriver, WialonPassenger
+from app.gateways.wialon.dto import WialonDriver, WialonPassenger, WialonPosition, WialonUnit
 from app.schemas.people import DriverUpdate, PassengerUpdate
 from app.services import people_service as service
 
@@ -32,6 +32,12 @@ class FakeGateway:
         self.driver = driver()
         self.passenger = passenger()
         self.calls = []
+        self.unit_ids = {12}
+
+    def search_item(self, unit_id):
+        if unit_id not in self.unit_ids:
+            return None
+        return WialonUnit(unit_id, "Unidad", WialonPosition(None, None, None, None, None))
 
     def get_driver(self, resource_id, person_id):
         return self.driver if person_id == self.driver.id else None
@@ -152,11 +158,40 @@ def test_passenger_custom_field_remove_is_explicit_and_retains_other_fields():
 @pytest.mark.parametrize("bind", [True, False])
 def test_binding_calls_preserve_direction_and_ids(kind, bind):
     gateway = FakeGateway()
+    if not bind:
+        gateway.driver = driver(bound_unit_id=12)
+        gateway.passenger = passenger(bound_unit_id=12)
     if kind == "driver":
         service.bind_driver(gateway, resource_id=2, driver_id=7, unit_id=12, bind=bind, time=123)
     else:
         service.bind_passenger(gateway, resource_id=2, passenger_id=9, unit_id=12, bind=bind, time=123)
     assert gateway.calls[-1][-3:] == (12, bind, 123)
+
+
+@pytest.mark.parametrize("person_kind", ["driver", "passenger"])
+def test_binding_rejects_nonexistent_unit_without_mutation(person_kind):
+    gateway = FakeGateway()
+    bind = service.bind_driver if person_kind == "driver" else service.bind_passenger
+    person_id = {"driver_id": 7} if person_kind == "driver" else {"passenger_id": 9}
+
+    with pytest.raises(service.VehicleNotFoundError):
+        bind(gateway, resource_id=2, unit_id=999, bind=True, **person_id)
+
+    assert gateway.calls == []
+
+
+@pytest.mark.parametrize("person_kind", ["driver", "passenger"])
+def test_binding_rejects_duplicate_assignment_without_mutation(person_kind):
+    gateway = FakeGateway()
+    gateway.driver = driver(bound_unit_id=12)
+    gateway.passenger = passenger(bound_unit_id=12)
+    bind = service.bind_driver if person_kind == "driver" else service.bind_passenger
+    person_id = {"driver_id": 7} if person_kind == "driver" else {"passenger_id": 9}
+
+    with pytest.raises(service.PersonAlreadyBoundError):
+        bind(gateway, resource_id=2, unit_id=12, bind=True, **person_id)
+
+    assert gateway.calls == []
 
 
 def test_auto_units_replacement_merges_existing_ids():
