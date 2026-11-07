@@ -246,6 +246,8 @@ No subas `.env` ni `.env.local` al repositorio. El workflow de CI rechaza cualqu
 
 ## Seguridad
 
+El procedimiento pendiente de rotación de credenciales expuestas está documentado en [docs/security/secret-rotation.md](docs/security/secret-rotation.md). No contiene valores secretos; la revocación debe completarla el propietario en Wialon, Neon y Render.
+
 - Contrasenas hasheadas con Argon2.
 - Access tokens JWT de corta duracion.
 - Refresh tokens rotativos almacenados como hash en base de datos.
