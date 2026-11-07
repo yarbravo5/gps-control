@@ -63,11 +63,9 @@ Roles disponibles:
 
 ### Pendiente para siguientes iteraciones
 
-- Listado de pasajeros asignados dentro de la ficha de vehículo; el conductor vinculado ya se consulta desde Wialon.
 - Reproductor de historial de recorridos.
-- Mostrar pasajeros vinculados en el detalle del vehículo.
-- Panel frontend de usuarios/auditoría, campos personalizados de vehículos e historial con playback.
-- Panel de usuarios y auditoría en el frontend.
+- Panel frontend de usuarios y auditoría.
+- Campos personalizados de vehículos.
 - Exportación CSV (el permiso `export:csv` ya existe en el catálogo).
 - Rate limiting global adicional al bloqueo de login.
 
@@ -392,9 +390,9 @@ Pautas aplicadas:
 | Autenticacion y sesiones | Completo en backend y frontend |
 | RBAC y permisos | Completo en backend; guards en frontend |
 | Dashboard | API de métricas protegida y gráficas frontend; pendiente verificar con recursos reales de Wialon en producción |
-| Vehiculos y Wialon | Listado, mapa y detalle con conductor integrados; pasajeros en detalle pendientes |
+| Vehiculos y Wialon | Listado, mapa y detalle con conductor/pasajeros integrados |
 | Historial de recorridos | Backend completo; reproductor pendiente |
-| Conductores y pasajeros | CRUD, custom fields y bindings integrados; pasajeros en detalle de vehículo pendientes |
+| Conductores y pasajeros | CRUD, custom fields y bindings integrados |
 | Usuarios y auditoria | Backend completo; pantallas pendientes |
 | Exportacion CSV | Pendiente |
 | Despliegue publico | Frontend y backend activos; los commits locales recientes aún no están desplegados |

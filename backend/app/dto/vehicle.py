@@ -38,6 +38,14 @@ class VehicleDriverDTO:
 
 
 @dataclass(frozen=True)
+class VehiclePassengerDTO:
+    id: int
+    name: str
+    code: str
+
+
+@dataclass(frozen=True)
 class VehicleDetailDTO:
     vehicle: VehicleDTO
     drivers: list[VehicleDriverDTO]
+    passengers: list[VehiclePassengerDTO]

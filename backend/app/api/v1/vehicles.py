@@ -104,6 +104,7 @@ def get_vehicle(
         return VehicleDetailResponse.model_validate({
             **detail.vehicle.__dict__,
             "drivers": [driver.__dict__ for driver in detail.drivers],
+            "passengers": [passenger.__dict__ for passenger in detail.passengers],
         })
     except WialonIntegrationError as exc:
         raise HTTPException(

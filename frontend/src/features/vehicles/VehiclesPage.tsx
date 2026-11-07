@@ -259,10 +259,10 @@ function SelectedVehicle({
       <h2 className="text-lg font-semibold text-slate-950">{vehicle.name}</h2>
       <p className="text-sm text-muted">{statusLabels[vehicle.status]} · {vehicle.speed_kmh === null ? "Velocidad sin dato" : `${vehicle.speed_kmh} km/h`}</p>
       <p className="text-sm text-muted">{vehicle.latitude === null || vehicle.longitude === null ? "Sin posición válida" : `${vehicle.latitude.toFixed(5)}, ${vehicle.longitude.toFixed(5)}`}</p>
-      {isLoading ? <p aria-live="polite" className="text-sm text-muted">Consultando conductor vinculado…</p> : null}
+      {isLoading ? <p aria-live="polite" className="text-sm text-muted">Consultando personas vinculadas…</p> : null}
       {error ? (
         <div className="grid justify-items-start gap-2">
-          <p className="text-sm text-wine-dark" role="alert">No fue posible consultar el conductor asignado.</p>
+          <p className="text-sm text-wine-dark" role="alert">No fue posible consultar las personas vinculadas.</p>
           <Button onClick={onRetry} variant="secondary">Reintentar</Button>
         </div>
       ) : null}
@@ -277,6 +277,11 @@ function SelectedVehicle({
         </div>
       ) : null}
       {detail && detail.drivers.length === 0 ? <p className="text-sm text-muted">No hay conductor vinculado a este vehículo.</p> : null}
+      {detail && detail.passengers.length > 0 ? <div className="grid gap-1 text-sm">
+        <h3 className="font-semibold text-slate-900">Pasajeros asignados</h3>
+        {detail.passengers.map((passenger) => <p className="m-0 text-muted" key={passenger.id}>{passenger.name}{passenger.code ? ` · ${passenger.code}` : ""}</p>)}
+      </div> : null}
+      {detail && detail.passengers.length === 0 ? <p className="text-sm text-muted">No hay pasajeros vinculados a este vehículo.</p> : null}
     </aside>
   );
 }

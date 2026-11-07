@@ -20,8 +20,15 @@ export interface VehicleDriver {
   phone: string | null;
 }
 
+export interface VehiclePassenger {
+  id: number;
+  name: string;
+  code: string;
+}
+
 export interface VehicleDetail extends Vehicle {
   drivers: VehicleDriver[];
+  passengers: VehiclePassenger[];
 }
 
 export interface VehiclePage {

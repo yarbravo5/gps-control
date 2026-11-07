@@ -109,7 +109,7 @@ describe("VehiclesPage", () => {
     const user = userEvent.setup();
     getVehicles.mockImplementation((url, config) => {
       if (url !== "/vehicles") {
-        return Promise.resolve({ data: { ...sampleVehicle, drivers: [] } }) as never;
+        return Promise.resolve({ data: { ...sampleVehicle, drivers: [], passengers: [] } }) as never;
       }
       const params = config?.params as { limit?: number; offset?: number } | undefined;
       const total = params?.limit === 100 ? 1 : 45;
@@ -168,7 +168,7 @@ describe("VehiclesPage", () => {
     }));
     getVehicles.mockImplementation((url, config) => {
       if (url !== "/vehicles") {
-        return Promise.resolve({ data: { ...sampleVehicle, drivers: [] } }) as never;
+        return Promise.resolve({ data: { ...sampleVehicle, drivers: [], passengers: [] } }) as never;
       }
       const params = config?.params as { limit?: number; offset?: number } | undefined;
       const offset = params?.offset ?? 0;
@@ -191,7 +191,7 @@ describe("VehiclesPage", () => {
     getVehicles.mockImplementation((url) => Promise.resolve({
       data: url === "/vehicles"
         ? page([sampleVehicle])
-        : { ...sampleVehicle, drivers: [{ id: 7, name: "Ana", phone: "555" }] },
+        : { ...sampleVehicle, drivers: [{ id: 7, name: "Ana", phone: "555" }], passengers: [] },
     }) as never);
     renderPage();
 
@@ -203,12 +203,27 @@ describe("VehiclesPage", () => {
   it("comunica claramente cuando el vehículo no tiene conductor vinculado", async () => {
     const user = userEvent.setup();
     getVehicles.mockImplementation((url) => Promise.resolve({
-      data: url === "/vehicles" ? page([sampleVehicle]) : { ...sampleVehicle, drivers: [] },
+      data: url === "/vehicles" ? page([sampleVehicle]) : { ...sampleVehicle, drivers: [], passengers: [] },
     }) as never);
     renderPage();
 
     await user.click(await screen.findByRole("button", { name: "Ubicar" }));
 
     expect(await screen.findByText("No hay conductor vinculado a este vehículo.")).toBeVisible();
+  });
+
+  it("muestra los pasajeros vinculados que devuelve el detalle", async () => {
+    const user = userEvent.setup();
+    getVehicles.mockImplementation((url) => Promise.resolve({
+      data: url === "/vehicles"
+        ? page([sampleVehicle])
+        : { ...sampleVehicle, drivers: [], passengers: [{ id: 9, name: "Luis", code: "P9" }] },
+    }) as never);
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Ubicar" }));
+
+    expect(await screen.findByText("Pasajeros asignados")).toBeVisible();
+    expect(screen.getByText("Luis · P9")).toBeVisible();
   });
 });

@@ -31,5 +31,12 @@ class VehicleDriverResponse(BaseModel):
     phone: str | None
 
 
+class VehiclePassengerResponse(BaseModel):
+    id: int
+    name: str
+    code: str
+
+
 class VehicleDetailResponse(VehicleResponse):
     drivers: list[VehicleDriverResponse]
+    passengers: list[VehiclePassengerResponse]

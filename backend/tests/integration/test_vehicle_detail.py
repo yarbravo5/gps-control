@@ -3,15 +3,30 @@ from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 
 from app.api.v1.vehicles import get_wialon_gateway
-from app.gateways.wialon.dto import WialonPosition, WialonUnit, WialonUnitDriver
+from app.gateways.wialon.dto import (
+    WialonPosition,
+    WialonResourceSearchResult,
+    WialonUnit,
+    WialonUnitDriver,
+    resource_from_wialon,
+)
 from tests.conftest import ADMIN_EMAIL, ADMIN_PASSWORD, VIEWER_EMAIL, VIEWER_PASSWORD, login
 
 
 class FakeVehicleDetailGateway:
-    def __init__(self, *, drivers=None, unit_exists=True):
+    def __init__(self, *, drivers=None, passenger_records=None, unit_exists=True):
         self.drivers = drivers or []
         self.unit_exists = unit_exists
         self.requested_ids = []
+        resource = resource_from_wialon({
+            "id": 20,
+            "nm": "Flota",
+            "tags": {
+                str(record["id"]): record
+                for record in (passenger_records or [])
+            },
+        })
+        self.resources = [resource] if resource is not None else []
 
     def search_item(self, unit_id):
         self.requested_ids.append(unit_id)
@@ -28,6 +43,10 @@ class FakeVehicleDetailGateway:
     def get_unit_drivers_for_all_resources(self, unit_id):
         self.requested_ids.append(unit_id)
         return self.drivers
+
+    def search_resources(self, offset, limit):
+        items = self.resources[offset : offset + limit]
+        return WialonResourceSearchResult(items, len(self.resources))
 
 
 def test_vehicle_detail_returns_transformed_data_and_linked_driver(client: TestClient):
@@ -46,6 +65,7 @@ def test_vehicle_detail_returns_transformed_data_and_linked_driver(client: TestC
     assert payload["status"] == "moving"
     assert payload["direction"] == "E"
     assert payload["drivers"] == [{"id": 7, "name": "Ana", "phone": "555"}]
+    assert payload["passengers"] == []
     assert gateway.requested_ids == [42, 42]
     client.app.dependency_overrides.pop(get_wialon_gateway, None)
 
@@ -78,4 +98,20 @@ def test_vehicle_detail_returns_not_found_for_inaccessible_or_missing_unit(clien
 
     assert response.status_code == 404
     assert gateway.requested_ids == [999]
+    client.app.dependency_overrides.pop(get_wialon_gateway, None)
+
+
+def test_vehicle_detail_includes_only_passengers_bound_to_this_vehicle(client: TestClient):
+    gateway = FakeVehicleDetailGateway(passenger_records=[
+        {"id": 9, "n": "Luis", "c": "P9", "bu": 42, "tz": 0, "ck": 0, "f": 0, "art": 0},
+        {"id": 10, "n": "Marta", "c": "P10", "bu": 99, "tz": 0, "ck": 0, "f": 0, "art": 0},
+    ])
+    client.app.dependency_overrides[get_wialon_gateway] = lambda: gateway
+    auth = login(client, VIEWER_EMAIL, VIEWER_PASSWORD)
+    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+
+    response = client.get("/api/v1/vehicles/42", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["passengers"] == [{"id": 9, "name": "Luis", "code": "P9"}]
     client.app.dependency_overrides.pop(get_wialon_gateway, None)

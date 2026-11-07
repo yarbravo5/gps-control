@@ -3,8 +3,19 @@ from typing import Protocol
 
 from app.core.config import settings
 from app.core.time import get_current_utc_datetime
-from app.dto.vehicle import VehicleDetailDTO, VehicleDriverDTO, VehiclePageDTO, VehicleStatus
-from app.gateways.wialon.dto import WialonUnit, WialonUnitDriver, WialonUnitSearchResult
+from app.dto.vehicle import (
+    VehicleDetailDTO,
+    VehicleDriverDTO,
+    VehiclePageDTO,
+    VehiclePassengerDTO,
+    VehicleStatus,
+)
+from app.gateways.wialon.dto import (
+    WialonResourceSearchResult,
+    WialonUnit,
+    WialonUnitDriver,
+    WialonUnitSearchResult,
+)
 from app.mappers.vehicle_mapper import map_vehicle
 
 
@@ -15,6 +26,7 @@ class VehicleGateway(Protocol):
 
     def search_item(self, unit_id: int) -> WialonUnit | None: ...
     def get_unit_drivers_for_all_resources(self, unit_id: int) -> list[WialonUnitDriver]: ...
+    def search_resources(self, offset: int, limit: int) -> WialonResourceSearchResult: ...
 
 
 def list_vehicles(
@@ -101,4 +113,17 @@ def get_vehicle_detail(
         VehicleDriverDTO(id=driver.id, name=driver.name, phone=driver.phone)
         for driver in gateway.get_unit_drivers_for_all_resources(vehicle_id)
     ]
-    return VehicleDetailDTO(vehicle=vehicle, drivers=drivers)
+    passengers = []
+    offset = 0
+    while True:
+        resource_page = gateway.search_resources(offset, 100)
+        passengers.extend(
+            VehiclePassengerDTO(id=passenger.id, name=passenger.name, code=passenger.code)
+            for resource in resource_page.items
+            for passenger in resource.passengers
+            if passenger.bound_unit_id == vehicle_id
+        )
+        if not resource_page.items or offset + len(resource_page.items) >= resource_page.total:
+            break
+        offset += len(resource_page.items)
+    return VehicleDetailDTO(vehicle=vehicle, drivers=drivers, passengers=passengers)
