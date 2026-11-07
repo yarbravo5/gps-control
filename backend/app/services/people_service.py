@@ -213,7 +213,7 @@ def update_passenger(
     current = gateway.get_passenger(resource_id, passenger_id)
     if current is None:
         raise PersonNotFoundError("Pasajero no encontrado.")
-    required = {"n", "c", "ck", "tz", "f", "art"}
+    required = {"n", "c", "ck", "jp", "tz", "f", "art"}
     if not required.issubset(current.available_fields):
         raise UnsafePartialUpdateError(
             "Wialon no devolvió todos los campos necesarios para preservar el pasajero."

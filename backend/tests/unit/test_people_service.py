@@ -109,6 +109,21 @@ def test_passenger_patch_preserves_jp_and_requires_explicit_phone():
     assert result.custom_fields == sent["custom_fields"]
 
 
+def test_passenger_patch_fails_closed_when_custom_fields_were_not_returned():
+    gateway = FakeGateway()
+    gateway.passenger = passenger(
+        available_fields=frozenset({"id", "n", "c", "ck", "tz", "f", "art", "bu"})
+    )
+
+    with pytest.raises(service.UnsafePartialUpdateError):
+        service.update_passenger(
+            gateway, resource_id=2, passenger_id=9,
+            changes={"name": "Luis M."}, phone="555",
+        )
+
+    assert gateway.calls == []
+
+
 def test_passenger_custom_field_remove_is_explicit_and_retains_other_fields():
     gateway = FakeGateway()
     service.update_passenger(
