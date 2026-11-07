@@ -16,6 +16,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Reject tracked environment files
+        run: |
+          tracked=$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$' || true)
+          if [ -n "$tracked" ]; then
+            echo "Archivos .env reales detectados en Git:"
+            echo "$tracked"
+            exit 1
+          fi
+
       - name: Validate Compose file
         run: docker compose config
 

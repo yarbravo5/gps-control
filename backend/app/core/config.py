@@ -1,8 +1,8 @@
 from typing import Literal
 
-from pydantic import EmailStr, Field
+from pydantic import EmailStr, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy.engine import URL
+from sqlalchemy.engine import URL, make_url
 
 
 class Settings(BaseSettings):
@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     # Database
+    database_url_override: str | None = Field(
+        default=None,
+        validation_alias="DATABASE_URL",
+    )
     db_host: str
     db_port: int = 5432
     db_name: str
@@ -29,7 +33,7 @@ class Settings(BaseSettings):
     cookie_domain: str | None = None
 
     # Wialon
-    wialon_token: str
+    wialon_token: SecretStr
     wialon_host: str = "hst-api.wialon.com"
     wialon_http_timeout_seconds: float = Field(default=10.0, gt=0)
     wialon_no_signal_after_seconds: int = Field(default=600, gt=0)
@@ -50,6 +54,15 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
+        if self.database_url_override:
+            raw_url = self.database_url_override.strip()
+            if raw_url.startswith("postgres://"):
+                raw_url = f"postgresql://{raw_url.removeprefix('postgres://')}"
+            parsed_url = make_url(raw_url)
+            if parsed_url.drivername.startswith("postgresql"):
+                parsed_url = parsed_url.set(drivername="postgresql+psycopg")
+            return parsed_url.render_as_string(hide_password=False)
+
         return URL.create(
             "postgresql+psycopg",
             username=self.db_user,

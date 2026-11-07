@@ -99,7 +99,7 @@ def seed_admin_user(database_session: Session) -> None:
         password_hash=hash_password(admin_password),
         role=admin_role,
         is_active=True,
-        must_change_password=True,
+        must_change_password=False,
     )
     database_session.add(admin_user)
     database_session.commit()

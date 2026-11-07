@@ -15,7 +15,7 @@ from app.services import history_service, vehicle_service
 router = APIRouter(prefix="/vehicles", tags=["vehicles"])
 
 _wialon_gateway = WialonClient(
-    token=settings.wialon_token,
+    token=settings.wialon_token.get_secret_value(),
     host=settings.wialon_host,
     timeout_seconds=settings.wialon_http_timeout_seconds,
 )
