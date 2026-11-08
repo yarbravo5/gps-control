@@ -6,10 +6,17 @@ import { LoadingState } from "../../components/feedback/LoadingState";
 import { ApiError } from "../../services/api/apiError";
 import { getFleetDashboard } from "./dashboardApi";
 
+const bogotaDateTime = new Intl.DateTimeFormat("es-CO", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "America/Bogota",
+});
+
 export function DashboardPage() {
   const dashboardQuery = useQuery({
     queryKey: ["fleet-dashboard"],
     queryFn: getFleetDashboard,
+    refetchInterval: () => document.visibilityState === "visible" ? 30_000 : false,
   });
 
   if (dashboardQuery.isPending) {
@@ -27,6 +34,9 @@ export function DashboardPage() {
   const data = dashboardQuery.data;
   return (
     <div className="grid gap-7">
+      <p aria-live="polite" className="text-sm text-muted">
+        Datos consultados: {bogotaDateTime.format(new Date(data.generated_at))} (hora de Bogotá)
+      </p>
       {data.total_vehicles === 0 ? (
         <EmptyState
           title="Aún no hay vehículos para resumir"

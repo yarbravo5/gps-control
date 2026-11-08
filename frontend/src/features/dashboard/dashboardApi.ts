@@ -1,6 +1,7 @@
 import { httpClient } from "../../services/api/httpClient";
 
 export interface FleetDashboard {
+  generated_at: string;
   total_vehicles: number;
   moving_vehicles: number;
   stopped_vehicles: number;

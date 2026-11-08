@@ -40,6 +40,7 @@ class FakeDashboardGateway:
 def test_dashboard_aggregates_live_vehicle_states_and_resource_people() -> None:
     result = get_fleet_dashboard(FakeDashboardGateway(), now=NOW)
 
+    assert result.generated_at == NOW
     assert result.total_vehicles == 3
     assert result.moving_vehicles == 1
     assert result.stopped_vehicles == 1

@@ -15,6 +15,7 @@ vi.mock("../src/services/api/httpClient", () => ({
 const getDashboard = vi.mocked(httpClient.get);
 
 const dashboardData: FleetDashboard = {
+  generated_at: "2026-11-07T12:00:00Z",
   total_vehicles: 12,
   moving_vehicles: 5,
   stopped_vehicles: 4,
@@ -40,6 +41,7 @@ describe("DashboardPage", () => {
     renderDashboard();
 
     expect(await screen.findByText("12", { selector: "dd" })).toBeVisible();
+    expect(screen.getByText(/Datos consultados:/)).toHaveTextContent("hora de Bogotá");
     expect(screen.getByRole("figure", { name: "Estado de los vehículos" })).toBeVisible();
     expect(screen.getByRole("figure", { name: "Asignación de conductores" })).toBeVisible();
     expect(screen.getByRole("meter", { name: "En movimiento: 5 de 12" })).toHaveAttribute("aria-valuenow", "5");

@@ -62,6 +62,7 @@ def get_fleet_dashboard(
     vehicles_with_driver = len(vehicle_ids & bound_unit_ids)
 
     return FleetDashboardDTO(
+        generated_at=current_time.astimezone(timezone.utc),
         total_vehicles=len(vehicles),
         moving_vehicles=sum(vehicle.status is VehicleStatus.MOVING for vehicle in vehicles),
         stopped_vehicles=sum(vehicle.status is VehicleStatus.STOPPED for vehicle in vehicles),

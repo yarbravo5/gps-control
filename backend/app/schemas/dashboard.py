@@ -1,9 +1,12 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict
 
 
 class FleetDashboardResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    generated_at: datetime
     total_vehicles: int
     moving_vehicles: int
     stopped_vehicles: int
