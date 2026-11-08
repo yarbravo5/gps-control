@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from sqlalchemy.orm import Session
 
 from app.api.v1.vehicles import get_wialon_gateway
 from app.core.dependencies import require_permission
+from app.core.request import get_client_ip
+from app.db.session import get_database_session
 from app.dto.people import DriverDTO
 from app.gateways.wialon import WialonClient
 from app.gateways.wialon.exceptions import WialonIntegrationError
@@ -18,7 +21,7 @@ from app.schemas.people import (
     DriverUpdate,
     UnitPersonResponse,
 )
-from app.services import people_service
+from app.services import audit_service, people_service
 
 
 router = APIRouter(prefix="/drivers", tags=["drivers"])
@@ -79,14 +82,29 @@ def list_drivers(
 @router.post("", response_model=DriverResponse, status_code=status.HTTP_201_CREATED)
 def create_driver(
     payload: DriverCreate,
-    _current_user: User = Depends(require_permission("drivers:write")),
+    request: Request,
+    current_user: User = Depends(require_permission("drivers:write")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> DriverResponse:
     try:
         driver = people_service.create_driver(
             gateway,
             resource_id=payload.resource_id,
             fields=payload.model_dump(exclude={"resource_id"}),
+        )
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="driver.created",
+            entity="driver",
+            entity_id=str(driver.id),
+            details={
+                "resource_id": payload.resource_id,
+                "name": driver.name,
+                "custom_fields": sorted(driver.custom_fields),
+            },
+            ip_address=get_client_ip(request),
         )
         return _driver_response(driver)
     except Exception as exc:
@@ -112,23 +130,37 @@ def get_driver(
 def update_driver(
     driver_id: int,
     payload: DriverUpdate,
+    request: Request,
     resource_id: int = Query(gt=0),
-    _current_user: User = Depends(require_permission("drivers:write")),
+    current_user: User = Depends(require_permission("drivers:write")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> DriverResponse:
     try:
         changes = {
             field: getattr(payload, field)
             for field in payload.model_fields_set
         }
-        return _driver_response(
-            people_service.update_driver(
-                gateway,
-                resource_id=resource_id,
-                driver_id=driver_id,
-                changes=changes,
-            )
+        driver = people_service.update_driver(
+            gateway,
+            resource_id=resource_id,
+            driver_id=driver_id,
+            changes=changes,
         )
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="driver.updated",
+            entity="driver",
+            entity_id=str(driver_id),
+            details={
+                "resource_id": resource_id,
+                "changed_fields": sorted(changes),
+                "custom_fields": sorted(driver.custom_fields),
+            },
+            ip_address=get_client_ip(request),
+        )
+        return _driver_response(driver)
     except Exception as exc:
         raise _raise_people_error(exc) from exc
 
@@ -136,12 +168,23 @@ def update_driver(
 @router.delete("/{driver_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_driver(
     driver_id: int,
+    request: Request,
     resource_id: int = Query(gt=0),
-    _current_user: User = Depends(require_permission("drivers:write")),
+    current_user: User = Depends(require_permission("drivers:write")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> Response:
     try:
         people_service.delete_driver(gateway, resource_id=resource_id, driver_id=driver_id)
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="driver.deleted",
+            entity="driver",
+            entity_id=str(driver_id),
+            details={"resource_id": resource_id},
+            ip_address=get_client_ip(request),
+        )
     except Exception as exc:
         raise _raise_people_error(exc) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -167,8 +210,10 @@ def list_unit_drivers(
 def bind_driver(
     driver_id: int,
     payload: BindingRequest,
-    _current_user: User = Depends(require_permission("drivers:bind")),
+    request: Request,
+    current_user: User = Depends(require_permission("drivers:bind")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> Response:
     try:
         people_service.bind_driver(
@@ -179,6 +224,15 @@ def bind_driver(
             bind=True,
             time=payload.time,
         )
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="driver.bound",
+            entity="driver",
+            entity_id=str(driver_id),
+            details={"resource_id": payload.resource_id, "unit_id": payload.unit_id},
+            ip_address=get_client_ip(request),
+        )
     except Exception as exc:
         raise _raise_people_error(exc) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -188,8 +242,10 @@ def bind_driver(
 def unbind_driver(
     driver_id: int,
     payload: BindingRequest,
-    _current_user: User = Depends(require_permission("drivers:bind")),
+    request: Request,
+    current_user: User = Depends(require_permission("drivers:bind")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> Response:
     try:
         people_service.bind_driver(
@@ -199,6 +255,15 @@ def unbind_driver(
             unit_id=payload.unit_id,
             bind=False,
             time=payload.time,
+        )
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="driver.unbound",
+            entity="driver",
+            entity_id=str(driver_id),
+            details={"resource_id": payload.resource_id, "unit_id": payload.unit_id},
+            ip_address=get_client_ip(request),
         )
     except Exception as exc:
         raise _raise_people_error(exc) from exc
@@ -245,8 +310,10 @@ def get_driver_automatic_units(
 def update_driver_automatic_units(
     resource_id: int,
     payload: AutomaticUnitsUpdate,
-    _current_user: User = Depends(require_permission("drivers:bind")),
+    request: Request,
+    current_user: User = Depends(require_permission("drivers:bind")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> AutomaticUnitsResponse:
     try:
         result = people_service.update_driver_automatic_units(
@@ -254,6 +321,18 @@ def update_driver_automatic_units(
             resource_id=resource_id,
             add_unit_ids=payload.add_unit_ids,
             remove_unit_ids=payload.remove_unit_ids,
+        )
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="driver.automatic_units_updated",
+            entity="resource",
+            entity_id=str(resource_id),
+            details={
+                "added_unit_ids": payload.add_unit_ids,
+                "removed_unit_ids": payload.remove_unit_ids,
+            },
+            ip_address=get_client_ip(request),
         )
         return AutomaticUnitsResponse.model_validate(result)
     except Exception as exc:

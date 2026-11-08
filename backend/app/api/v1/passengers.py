@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from sqlalchemy.orm import Session
 
 from app.api.v1.vehicles import get_wialon_gateway
 from app.core.dependencies import require_permission
+from app.core.request import get_client_ip
+from app.db.session import get_database_session
 from app.dto.people import PassengerDTO
 from app.gateways.wialon import WialonClient
 from app.gateways.wialon.exceptions import WialonIntegrationError
@@ -16,7 +19,7 @@ from app.schemas.people import (
     PassengerResponse,
     PassengerUpdate,
 )
-from app.services import people_service
+from app.services import audit_service, people_service
 
 
 router = APIRouter(prefix="/passengers", tags=["passengers"])
@@ -77,14 +80,29 @@ def list_passengers(
 @router.post("", response_model=PassengerResponse, status_code=status.HTTP_201_CREATED)
 def create_passenger(
     payload: PassengerCreate,
-    _current_user: User = Depends(require_permission("passengers:write")),
+    request: Request,
+    current_user: User = Depends(require_permission("passengers:write")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> PassengerResponse:
     try:
         passenger = people_service.create_passenger(
             gateway,
             resource_id=payload.resource_id,
             fields=payload.model_dump(exclude={"resource_id"}),
+        )
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="passenger.created",
+            entity="passenger",
+            entity_id=str(passenger.id),
+            details={
+                "resource_id": payload.resource_id,
+                "name": passenger.name,
+                "custom_fields": sorted(passenger.custom_fields),
+            },
+            ip_address=get_client_ip(request),
         )
         return _passenger_response(passenger)
     except Exception as exc:
@@ -112,9 +130,11 @@ def get_passenger(
 def update_passenger(
     passenger_id: int,
     payload: PassengerUpdate,
+    request: Request,
     resource_id: int = Query(gt=0),
-    _current_user: User = Depends(require_permission("passengers:write")),
+    current_user: User = Depends(require_permission("passengers:write")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> PassengerResponse:
     try:
         changes = {
@@ -129,6 +149,19 @@ def update_passenger(
             changes=changes,
             phone=payload.phone,
         )
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="passenger.updated",
+            entity="passenger",
+            entity_id=str(passenger_id),
+            details={
+                "resource_id": resource_id,
+                "changed_fields": sorted(changes),
+                "custom_fields": sorted(passenger.custom_fields),
+            },
+            ip_address=get_client_ip(request),
+        )
         return _passenger_response(passenger)
     except Exception as exc:
         raise _raise_people_error(exc) from exc
@@ -138,9 +171,11 @@ def update_passenger(
 def update_passenger_custom_fields(
     passenger_id: int,
     payload: PassengerCustomFieldsUpdate,
+    request: Request,
     resource_id: int = Query(gt=0),
-    _current_user: User = Depends(require_permission("passengers:write")),
+    current_user: User = Depends(require_permission("passengers:write")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> PassengerResponse:
     try:
         passenger = people_service.update_passenger(
@@ -153,6 +188,19 @@ def update_passenger_custom_fields(
             },
             phone=payload.phone,
         )
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="passenger.custom_fields_updated",
+            entity="passenger",
+            entity_id=str(passenger_id),
+            details={
+                "resource_id": resource_id,
+                "updated_fields": sorted(payload.custom_fields),
+                "removed_fields": sorted(payload.remove_custom_fields),
+            },
+            ip_address=get_client_ip(request),
+        )
         return _passenger_response(passenger)
     except Exception as exc:
         raise _raise_people_error(exc) from exc
@@ -161,13 +209,24 @@ def update_passenger_custom_fields(
 @router.delete("/{passenger_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_passenger(
     passenger_id: int,
+    request: Request,
     resource_id: int = Query(gt=0),
-    _current_user: User = Depends(require_permission("passengers:write")),
+    current_user: User = Depends(require_permission("passengers:write")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> Response:
     try:
         people_service.delete_passenger(
             gateway, resource_id=resource_id, passenger_id=passenger_id
+        )
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="passenger.deleted",
+            entity="passenger",
+            entity_id=str(passenger_id),
+            details={"resource_id": resource_id},
+            ip_address=get_client_ip(request),
         )
     except Exception as exc:
         raise _raise_people_error(exc) from exc
@@ -194,8 +253,10 @@ def list_unit_passengers(
 def bind_passenger(
     passenger_id: int,
     payload: BindingRequest,
-    _current_user: User = Depends(require_permission("passengers:bind")),
+    request: Request,
+    current_user: User = Depends(require_permission("passengers:bind")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> Response:
     try:
         people_service.bind_passenger(
@@ -206,6 +267,15 @@ def bind_passenger(
             bind=True,
             time=payload.time,
         )
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="passenger.bound",
+            entity="passenger",
+            entity_id=str(passenger_id),
+            details={"resource_id": payload.resource_id, "unit_id": payload.unit_id},
+            ip_address=get_client_ip(request),
+        )
     except Exception as exc:
         raise _raise_people_error(exc) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -215,8 +285,10 @@ def bind_passenger(
 def unbind_passenger(
     passenger_id: int,
     payload: BindingRequest,
-    _current_user: User = Depends(require_permission("passengers:bind")),
+    request: Request,
+    current_user: User = Depends(require_permission("passengers:bind")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> Response:
     try:
         people_service.bind_passenger(
@@ -226,6 +298,15 @@ def unbind_passenger(
             unit_id=payload.unit_id,
             bind=False,
             time=payload.time,
+        )
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="passenger.unbound",
+            entity="passenger",
+            entity_id=str(passenger_id),
+            details={"resource_id": payload.resource_id, "unit_id": payload.unit_id},
+            ip_address=get_client_ip(request),
         )
     except Exception as exc:
         raise _raise_people_error(exc) from exc

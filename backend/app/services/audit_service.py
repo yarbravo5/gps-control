@@ -27,6 +27,32 @@ def record_audit(
     )
 
 
+def record_audit_best_effort(
+    database_session: Session,
+    *,
+    user_id: int | None,
+    action: str,
+    entity: str | None = None,
+    entity_id: str | None = None,
+    details: dict[str, Any] | None = None,
+    ip_address: str | None = None,
+) -> None:
+    """Persist an audit entry without letting audit failures break the operation."""
+    try:
+        record_audit(
+            database_session,
+            user_id=user_id,
+            action=action,
+            entity=entity,
+            entity_id=entity_id,
+            details=details,
+            ip_address=ip_address,
+        )
+        database_session.commit()
+    except Exception:
+        database_session.rollback()
+
+
 def list_audit_logs(
     database_session: Session,
     offset: int = 0,

@@ -10,6 +10,8 @@ from app.gateways.wialon.dto import (
     WialonUnit,
 )
 from tests.conftest import (
+    ADMIN_EMAIL,
+    ADMIN_PASSWORD,
     OPERATOR_EMAIL,
     OPERATOR_PASSWORD,
     VIEWER_EMAIL,
@@ -98,6 +100,25 @@ def test_operator_can_create_update_and_delete_vehicle_custom_fields(client: Tes
         (42, 5, "update", "Placa", "XYZ789"),
         (42, 0, "create", "Color", "Rojo"),
     ]
+
+    admin = login(client, ADMIN_EMAIL, ADMIN_PASSWORD)
+    audit = client.get(
+        "/api/v1/audit",
+        headers={"Authorization": f"Bearer {admin['access_token']}"},
+    )
+    assert audit.status_code == 200
+    entry = next(
+        item
+        for item in audit.json()
+        if item["action"] == "vehicle.custom_fields_updated"
+    )
+    assert entry["entity"] == "vehicle"
+    assert entry["entity_id"] == "42"
+    assert entry["details"] == {
+        "updated_fields": ["Placa"],
+        "created_fields": ["Color"],
+        "removed_field_ids": [6],
+    }
     client.app.dependency_overrides.pop(get_wialon_gateway, None)
 
 

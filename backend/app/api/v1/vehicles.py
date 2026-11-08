@@ -1,9 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.dependencies import require_permission
+from app.core.request import get_client_ip
+from app.db.session import get_database_session
 from app.gateways.wialon import WialonClient
 from app.gateways.wialon.exceptions import WialonIntegrationError
 from app.models import User
@@ -15,7 +18,7 @@ from app.schemas.vehicle import (
     VehicleResponse,
     VehicleStatus,
 )
-from app.services import history_service, vehicle_service
+from app.services import audit_service, history_service, vehicle_service
 
 
 router = APIRouter(prefix="/vehicles", tags=["vehicles"])
@@ -95,9 +98,11 @@ def get_vehicle_history(
 @router.patch("/{vehicle_id}/custom-fields", response_model=VehicleDetailResponse)
 def update_vehicle_custom_fields(
     payload: VehicleCustomFieldsUpdate,
+    request: Request,
     vehicle_id: int = Path(gt=0),
-    _current_user: User = Depends(require_permission("vehicles:custom_fields:write")),
+    current_user: User = Depends(require_permission("vehicles:custom_fields:write")),
     gateway: WialonClient = Depends(get_wialon_gateway),
+    database_session: Session = Depends(get_database_session),
 ) -> VehicleDetailResponse:
     try:
         detail = vehicle_service.update_vehicle_custom_fields(
@@ -105,6 +110,19 @@ def update_vehicle_custom_fields(
             vehicle_id=vehicle_id,
             fields=[field.model_dump() for field in payload.fields],
             remove_field_ids=payload.remove_field_ids,
+        )
+        audit_service.record_audit_best_effort(
+            database_session,
+            user_id=current_user.id,
+            action="vehicle.custom_fields_updated",
+            entity="vehicle",
+            entity_id=str(vehicle_id),
+            details={
+                "updated_fields": [field.name for field in payload.fields if field.id],
+                "created_fields": [field.name for field in payload.fields if not field.id],
+                "removed_field_ids": payload.remove_field_ids,
+            },
+            ip_address=get_client_ip(request),
         )
         return _detail_response(detail)
     except (
