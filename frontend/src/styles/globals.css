@@ -2331,7 +2331,9 @@ summary::-webkit-details-marker {
   }
 
   .landing-hero__banner {
-    height: 32rem;
+    height: auto;
+    min-height: 32rem;
+    grid-template-rows: auto auto;
     padding: 1.7rem 1.6rem 0.85rem;
   }
 
@@ -3262,6 +3264,8 @@ summary::-webkit-details-marker {
     width: 100vw;
     min-width: 0;
     padding: 1rem;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .login-panel {

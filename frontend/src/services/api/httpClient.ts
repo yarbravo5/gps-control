@@ -5,7 +5,35 @@ import { getCsrfToken } from "../../features/auth/csrf";
 import type { RefreshResponse } from "../../features/auth/types";
 import { normalizeApiError } from "./apiError";
 
-const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
+const LOCAL_API_URL = "http://localhost:8000/api/v1";
+
+function isLoopback(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+}
+
+export function resolveApiBaseUrl(
+  configuredApiUrl: string | undefined,
+  isDevelopment: boolean,
+  pageOrigin: string,
+): string {
+  const pageUrl = new URL(pageOrigin);
+  const localPage = isLoopback(pageUrl.hostname);
+  const configuredUrl = configuredApiUrl?.trim();
+
+  if (configuredUrl) {
+    try {
+      const configuredOrigin = new URL(configuredUrl, pageOrigin);
+      if (!localPage && isLoopback(configuredOrigin.hostname)) return "/api/v1";
+      return configuredUrl;
+    } catch {
+      return isDevelopment || localPage ? LOCAL_API_URL : "/api/v1";
+    }
+  }
+
+  return isDevelopment || localPage ? LOCAL_API_URL : "/api/v1";
+}
+
+const baseURL = resolveApiBaseUrl(import.meta.env.VITE_API_URL, import.meta.env.DEV, window.location.origin);
 const BACKEND_HEALTH_TIMEOUT_MS = 60_000;
 
 export const httpClient = axios.create({

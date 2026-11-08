@@ -21,3 +21,10 @@
   background: #1e8c93;
   box-shadow: 0 0 0 3px rgb(30 140 147 / 30%);
 }
+
+@media (max-width: 680px) {
+  .history-map {
+    height: clamp(18rem, 62svh, 24rem);
+    min-height: 18rem;
+  }
+}

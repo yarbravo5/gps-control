@@ -1,7 +1,7 @@
 import axios from "axios";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { checkBackendHealth, httpClient } from "../src/services/api/httpClient";
+import { checkBackendHealth, httpClient, resolveApiBaseUrl } from "../src/services/api/httpClient";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -27,5 +27,15 @@ describe("central HTTP client", () => {
       timeout: 60_000,
       withCredentials: false,
     }));
+  });
+
+  it("uses the same-origin API proxy for a public site with a stale localhost build variable", () => {
+    expect(resolveApiBaseUrl("http://localhost:8000/api/v1", false, "https://gps-control-mu.vercel.app"))
+      .toBe("/api/v1");
+  });
+
+  it("keeps localhost for local development while using the proxy in public production builds", () => {
+    expect(resolveApiBaseUrl(undefined, true, "http://localhost:5173")).toBe("http://localhost:8000/api/v1");
+    expect(resolveApiBaseUrl(undefined, false, "https://gps-control-mu.vercel.app")).toBe("/api/v1");
   });
 });

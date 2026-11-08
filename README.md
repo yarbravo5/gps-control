@@ -166,6 +166,14 @@ erDiagram
 
 La paleta central está definida en `frontend/src/styles/globals.css`: rojo `#eb162c` para marca, rojo oscuro `#d51429` y vino `#a81a2b` para acciones/énfasis, gris `#6b6b6b` para secundarios, teal `#1e8c93` para foco y acentos, púrpura pálido `#eee8f2` para fondos y vino oscuro `#751324` para texto destacado. Los fondos claros usan texto oscuro. El cumplimiento de contraste WCAG debe medirse sobre los estados renderizados antes de declararlo; los colores de marca por sí solos no constituyen evidencia de conformidad.
 
+## Diseño responsive (UX-01)
+
+- La interfaz se verifica desde 360 px de ancho, con 768 px como referencia de tablet y 1440 px como escritorio.
+- En móvil, la navegación de la aplicación se recoge en un botón; los listados operativos se muestran como tarjetas apiladas en vez de tablas comprimidas, y los formularios pasan a una columna.
+- El hero público apila texto e ilustración hasta 680 px; entre 681 y 780 px deja crecer su altura según el contenido para evitar solapamientos. A 390 px o menos, sus beneficios también se apilan.
+- Los mapas conservan controles táctiles y ancho completo. En móvil reducen su altura según el viewport, mientras el historial pone los controles de reproducción debajo del mapa.
+- La landing y el login se comprobaron en Chrome con viewports de 360, 768 y 1440 px. No hubo desbordamiento horizontal del documento en esas medidas.
+
 ## Estructura del repositorio
 
 ```text
