@@ -73,9 +73,14 @@ Roles disponibles:
 - El dashboard incluye la hora UTC de consulta presentada en hora de Bogotá y actualiza sus métricas cada 30 segundos mientras la pestaña está visible. El mapa y la actualización de posiciones están en el módulo de vehículos.
 - La interfaz de campos personalizados del vehículo se ajusta al ancho real de su panel; el mapa usa tiles canónicos de OSM y conserva el `Referer` requerido por la política. El cambio de tiles requiere un nuevo despliegue para verse en producción.
 
-## Estado de cierre
+## Pendientes de entrega
 
-La auditoría de requisitos, evidencia y tareas pendientes está en [docs/auditoria_final.md](docs/auditoria_final.md). Aún se requiere acceso al sitio desplegado para comprobar login, mapa, responsive y accesibilidad; tampoco se han generado mediciones Lighthouse ni capturas reales de la aplicación.
+- Verificar en producción el healthcheck, el acceso Admin, los permisos por rol, las operaciones Wialon, el mapa y el arranque en frío.
+- Revisar todas las vistas autenticadas en móvil, tablet y escritorio; completar contraste WCAG AA y pruebas con teclado/lector de pantalla.
+- Ejecutar Lighthouse móvil y agregar capturas reales de landing, dashboard, mapa y vista móvil.
+- Revisar el primer resultado de `pip-audit` en CI y definir rate limiting distribuido compatible con el proxy y las instancias desplegadas.
+
+La suite frontend (65 pruebas) y la suite backend pasan localmente. `npm audit --offline` reportó cero vulnerabilidades; `pip-audit` aún requiere confirmación en CI.
 
 ## Stack
 
