@@ -1,12 +1,41 @@
+from ipaddress import ip_address, ip_network
+
 from fastapi import Request
+
+from app.core.config import settings
 
 
 def get_client_ip(request: Request) -> str | None:
-    forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
+    if request.client is None:
+        return None
 
-    if request.client is not None:
-        return request.client.host
+    peer = request.client.host
+    if not _is_trusted_proxy(peer):
+        return peer
 
-    return None
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    candidate = peer
+    for raw_address in reversed(forwarded_for.split(",")):
+        try:
+            address = str(ip_address(raw_address.strip()))
+        except ValueError:
+            break
+        candidate = address
+        if not _is_trusted_proxy(address):
+            break
+    return candidate
+
+
+def _is_trusted_proxy(value: str) -> bool:
+    try:
+        address = ip_address(value)
+    except ValueError:
+        return False
+
+    for configured_network in settings.trusted_proxy_ips_list:
+        try:
+            if address in ip_network(configured_network, strict=False):
+                return True
+        except ValueError:
+            continue
+    return False

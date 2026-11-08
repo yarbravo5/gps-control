@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
     login_max_attempts: int = 5
     login_lockout_minutes: int = 15
+    login_rate_limit_window_seconds: int = Field(default=60, gt=0)
+    login_rate_limit_identity_requests: int = Field(default=10, gt=0)
+    login_rate_limit_source_requests: int = Field(default=300, gt=0)
+    trusted_proxy_ips: str = ""
 
     # Cookies
     cookie_secure: bool = False
@@ -84,6 +88,10 @@ class Settings(BaseSettings):
             for origin in self.cors_origins.split(",")
             if origin.strip()
         ]
+
+    @property
+    def trusted_proxy_ips_list(self) -> list[str]:
+        return [value.strip() for value in self.trusted_proxy_ips.split(",") if value.strip()]
 
 
 settings = Settings()

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -19,7 +21,11 @@ from app.core.security import (
 )
 from app.core.time import ensure_utc, get_current_utc_datetime
 from app.models import User
-from app.repositories import refresh_token_repository, user_repository
+from app.repositories import (
+    login_rate_limit_repository,
+    refresh_token_repository,
+    user_repository,
+)
 from app.services import audit_service
 
 
@@ -35,12 +41,59 @@ class PasswordChangeError(Exception):
     pass
 
 
+class LoginRateLimitExceeded(Exception):
+    def __init__(self, retry_after: int) -> None:
+        self.retry_after = retry_after
+        super().__init__("Se excedió el límite de intentos de inicio de sesión.")
+
+
 @dataclass(frozen=True)
 class IssuedTokens:
     access_token: str
     refresh_token: str
     csrf_token: str
     expires_in: int
+
+
+def enforce_login_rate_limit(
+    database_session: Session,
+    *,
+    email: str,
+    source_ip: str | None,
+) -> None:
+    """Apply shared per-identity and per-peer limits without trusting forwarded headers."""
+    now = get_current_utc_datetime()
+    window = settings.login_rate_limit_window_seconds
+    retention = max(window * 5, 300)
+    keys = [("identity", email.strip().lower())]
+    if source_ip:
+        keys.append(("source", source_ip.strip()))
+
+    exceeded_after: list[int] = []
+    for scope, value in keys:
+        message = f"{scope}:{value}".encode("utf-8")
+        digest = hmac.new(
+            settings.jwt_secret.encode("utf-8"),
+            message,
+            hashlib.sha256,
+        ).hexdigest()
+        count, retry_after = login_rate_limit_repository.consume_login_rate_limit(
+            database_session,
+            key_digest=digest,
+            now=now,
+            window_seconds=window,
+            retention_seconds=retention,
+        )
+        limit = (
+            settings.login_rate_limit_identity_requests
+            if scope == "identity"
+            else settings.login_rate_limit_source_requests
+        )
+        if count > limit:
+            exceeded_after.append(retry_after)
+
+    if exceeded_after:
+        raise LoginRateLimitExceeded(max(exceeded_after))
 
 
 def authenticate_user(

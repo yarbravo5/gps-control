@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.models import User
 from tests.conftest import (
     ADMIN_EMAIL,
@@ -41,6 +42,54 @@ def test_login_me_refresh_and_logout(client: TestClient) -> None:
         headers={"X-CSRF-Token": refreshed_data["csrf_token"]},
     )
     assert refresh_after_logout.status_code == 401
+
+
+def test_login_rate_limit_is_shared_per_identity_and_returns_retry_after(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "login_rate_limit_identity_requests", 2)
+    monkeypatch.setattr(settings, "login_rate_limit_source_requests", 100)
+
+    for _ in range(2):
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"email": "unknown@example.com", "password": "WrongPass123!"},
+        )
+        assert response.status_code == 401
+
+    blocked = client.post(
+        "/api/v1/auth/login",
+        json={"email": "unknown@example.com", "password": "WrongPass123!"},
+    )
+
+    assert blocked.status_code == 429
+    assert int(blocked.headers["Retry-After"]) > 0
+    assert blocked.headers["content-type"].startswith("application/problem+json")
+
+
+def test_login_rate_limit_ignores_untrusted_forwarded_for_header(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "login_rate_limit_identity_requests", 100)
+    monkeypatch.setattr(settings, "login_rate_limit_source_requests", 2)
+
+    for index in range(2):
+        response = client.post(
+            "/api/v1/auth/login",
+            headers={"X-Forwarded-For": f"198.51.100.{index + 1}"},
+            json={"email": f"unknown-{index}@example.com", "password": "WrongPass123!"},
+        )
+        assert response.status_code == 401
+
+    blocked = client.post(
+        "/api/v1/auth/login",
+        headers={"X-Forwarded-For": "203.0.113.99"},
+        json={"email": "another@example.com", "password": "WrongPass123!"},
+    )
+
+    assert blocked.status_code == 429
 
 
 def test_viewer_cannot_manage_users(client: TestClient) -> None:

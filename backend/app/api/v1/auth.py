@@ -40,6 +40,19 @@ def login(
     database_session: Session = Depends(get_database_session),
 ) -> TokenResponse:
     try:
+        auth_service.enforce_login_rate_limit(
+            database_session,
+            email=payload.email,
+            source_ip=get_client_ip(request),
+        )
+    except auth_service.LoginRateLimitExceeded as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados intentos de inicio de sesión. Intenta de nuevo más tarde.",
+            headers={"Retry-After": str(exc.retry_after)},
+        ) from exc
+
+    try:
         user = auth_service.authenticate_user(
             database_session,
             email=payload.email,

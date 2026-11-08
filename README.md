@@ -67,7 +67,7 @@ Roles disponibles:
 
 ### Limitaciones conocidas y siguientes pasos
 
-- No hay rate limiting global; el login tiene bloqueo temporal por intentos fallidos.
+- El login combina bloqueo por cuenta con límites distribuidos por identidad y peer de conexión. No hay rate limiting global para los demás endpoints; detrás de un proxy, configura `TRUSTED_PROXY_IPS` solo con CIDR verificados.
 - El backend limita el historial a siete días y 5.000 puntos por consulta; rangos mayores deben dividirse.
 - La auditoría registra mutaciones de vehículos, conductores, pasajeros y administración, además de fallos de login; su consulta es exclusiva del Admin.
 - El dashboard incluye la hora UTC de consulta presentada en hora de Bogotá y actualiza sus métricas cada 30 segundos mientras la pestaña está visible. El mapa y la actualización de posiciones están en el módulo de vehículos.
@@ -309,6 +309,8 @@ La plantilla completa del backend esta en `backend/.env.example`. Las principale
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Vida del access token. Por defecto 15 minutos. |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | Vida del refresh token. Por defecto 7 dias. |
 | `LOGIN_MAX_ATTEMPTS`, `LOGIN_LOCKOUT_MINUTES` | Bloqueo temporal por intentos fallidos. |
+| `LOGIN_RATE_LIMIT_WINDOW_SECONDS`, `LOGIN_RATE_LIMIT_IDENTITY_REQUESTS`, `LOGIN_RATE_LIMIT_SOURCE_REQUESTS` | Límites de inicio de sesión compartidos por la base de datos. |
+| `TRUSTED_PROXY_IPS` | CIDR de proxies confiables; vacío ignora `X-Forwarded-For` para identificar la IP. Configurar solo con rangos verificados. |
 | `COOKIE_SECURE`, `COOKIE_SAMESITE`, `COOKIE_DOMAIN` | Atributos de cookies de sesion. |
 | `WIALON_TOKEN`, `WIALON_HOST` | Credenciales de Wialon. El token no se versiona. |
 | `WIALON_HTTP_TIMEOUT_SECONDS` | Timeout de llamadas a Wialon. |
@@ -342,6 +344,7 @@ El procedimiento de revisión de credenciales está documentado en [docs/securit
 - Cookies `HttpOnly` para refresh y CSRF.
 - Validacion CSRF en refresh, logout y cambio de sesion.
 - Bloqueo temporal de cuenta tras intentos fallidos.
+- Rate limiting compartido en base de datos para el login, con claves HMAC y cabeceras reenviadas ignoradas salvo proxies explícitamente confiables.
 - RBAC verificado en el backend con permisos por endpoint.
 - Auditoria de accesos, cambios de contrasena y operaciones administrativas.
 - CORS restringido por variable de entorno.
