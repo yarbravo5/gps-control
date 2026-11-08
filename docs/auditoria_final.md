@@ -1,4 +1,4 @@
-# Auditoría final de `docs/prueba_tecnica.md`
+# Auditoría final de requisitos
 
 Fecha de revisión: 8 de noviembre de 2026. Estado basado en el código, las pruebas y la configuración del repositorio; “implementado” no implica que el servicio público o una cuenta real hayan sido verificados en esta sesión.
 
@@ -24,7 +24,7 @@ Fecha de revisión: 8 de noviembre de 2026. Estado basado en el código, las pru
 | TST-03 | Implementado | 65 pruebas frontend pasan con Vitest y Testing Library. |
 | TST-04 | Bonus no implementado | No se encontraron pruebas E2E. |
 | SEG-01–05, SEG-08–11 | Implementado en código, con verificación de despliegue pendiente | RBAC, cookies/CSRF, Argon2, validación, headers, logging de auditoría/denegación, host Wialon configurado y excepciones sanitizadas. CORS y headers públicos deben reconfirmarse en producción. |
-| SEG-06 | Implementado en CI; primer resultado pendiente | `npm audit --offline` reportó 0 vulnerabilidades. El workflow ahora ejecuta `npm audit --audit-level=high` y `pip-audit -r requirements.txt`; el entorno local no tenía `pip-audit` y falta confirmar el primer resultado de CI. |
+| SEG-06 | Implementado en CI; resultado incompleto | `npm audit --offline` reportó 0 vulnerabilidades. El workflow ejecuta `npm audit --audit-level=high` y `pip-audit -r requirements.txt`; `pip-audit` no está instalado aquí y no se pudo confirmar el primer resultado de CI. |
 | SEG-07 | Parcial | Hay política de contraseña, lockout temporal por cuenta y refresh rotatorio; falta rate limiting distribuido por IP/endpoint. La capa debe elegirse según el proxy y las instancias de despliegue. |
 | UX-01 | Parcial | Landing/login se habían comprobado a 360, 768 y 1440 px; listados son tarjetas y el formulario de detalle usa container queries. Falta recorrer todas las vistas autenticadas en esos tamaños con datos reales. |
 | UX-02 | Implementado en código | La identidad visual, componentes, estados, navegación y dashboard tienen sistema coherente. |
@@ -38,7 +38,7 @@ Fecha de revisión: 8 de noviembre de 2026. Estado basado en el código, las pru
 | README / docs | Parcial | Incluye enlaces, setup, diagramas, decisiones, seguridad, transformaciones, IA y limitaciones. Faltan capturas requeridas de landing, dashboard, mapa y móvil; Swagger solo se expone fuera de producción. |
 | GIT-01, 02, 04, 05 | Implementado | Repositorio público, commits convencionales e incrementales, sin reescritura forzada, lockfiles y `.gitignore`. |
 | GIT-03 | Recomendación no seguida | Los cambios se han integrado directamente en `main`; no es requisito obligatorio. |
-| DEP-01–03, 05–06 | Configurado; producción por verificar | URLs/configuración públicas, variables de entorno, CORS configurable, Docker Compose y GitHub Actions existen. Esta auditoría no confirmó disponibilidad ni CORS efectivo en vivo. El workflow incluye `pip-audit`/`npm audit`; falta observar su primera ejecución. |
+| DEP-01–03, 05–06 | Configurado; producción por verificar | URLs/configuración públicas, variables de entorno, CORS configurable, Docker Compose y GitHub Actions existen. Se intentó consultar el frontend y `/health`, pero el entorno de auditoría no permite conexiones externas; disponibilidad y CORS efectivo siguen sin confirmar. El workflow incluye `pip-audit`/`npm audit`; falta observar su primera ejecución. |
 | DEP-04 | Implementado en frontend; falta prueba desplegada | El login reintenta el healthcheck en hasta cuatro intentos con pausas 1/2/4 s y mensaje de arranque; falta probar el ciclo real dormido/despierto. |
 | Entrega 10.3 | Pendiente fuera del repositorio | No se envió correo, no se confirma disponibilidad por 15 días ni se incluyen aquí credenciales privadas de Admin. |
 
@@ -46,13 +46,20 @@ Fecha de revisión: 8 de noviembre de 2026. Estado basado en el código, las pru
 
 - Eliminé `frontend/src/components/ui/Badge.tsx`: `rg` no encontró consumidores; el componente no participaba en ninguna vista.
 - Eliminé `frontend/dist`, cinco capturas locales `.qa-*.png` y `backend/.coverage`. Eran artefactos ignorados y regenerables, no fuentes del proyecto.
-- No encontré otros módulos de `src` sin referencias ni directorios fuente vacíos. Conservé `docs/prueba_tecnica.md`, assets usados, configuraciones de entorno y dependencias locales.
+- No encontré otros módulos de `src` sin referencias ni directorios fuente vacíos. Eliminé `docs/prueba_tecnica.md` por solicitud del propietario; el resumen de requisitos y brechas permanece en este informe. Conservé assets usados, configuraciones de entorno y dependencias locales.
+- Conservé `docs/security/secret-rotation.md`: describe un procedimiento operativo sin valores secretos, está enlazado desde la sección Seguridad del README y evita rotaciones innecesarias o incompletas. Tiene utilidad directa para la operación segura del proyecto.
 - Intenté retirar `.pytest_cache` de raíz/backend/frontend, pero Windows respondió “Acceso denegado”. Son cachés ignoradas, no archivos versionados; se dejan intactas.
 
-## Plan final, en orden
+## Pendientes tras la ejecución local
 
-1. **Completar verificación funcional de producción.** Tras publicar estos commits, comprobar health, login Admin, RBAC de los tres roles, tiles OSM, CRUD Wialon, dashboard, filtros/orden/paginación y arranque en frío. Criterio: recorrido reproducible sin errores 4xx/5xx inesperados y tiles servidos con `Referer` válido.
-2. **Cerrar UX-01/UX-03 y UX-06 visualmente.** Recorrer rutas autenticadas a 360, 768 y 1440 px; medir contrastes WCAG AA y teclado/lector de pantalla. Criterio: sin overflow/solapes, ratio mínimo 4.5:1 para texto normal y evidencia registrada.
-3. **Optimizar y medir UX-07.** Analizar el bundle y cargar componentes/paquetes con separación si mejora el resultado; ejecutar Lighthouse móvil sobre la landing desplegada. Criterio: rendimiento ≥85, accesibilidad ≥90, buenas prácticas ≥90 y reporte/captura en README.
-4. **Completar autenticación y observar auditorías.** Confirmar el primer CI con `pip-audit` y `npm audit`; decidir limitador compartido (DB/servicio compatible) para rate limiting, conservar lockout por cuenta. Criterio: CI publica resultado sin vulnerabilidades conocidas y pruebas de límites/expiración pasan sin confiar en cabeceras IP no verificadas.
-5. **Completar entrega documental.** Añadir capturas reales de landing, dashboard, mapa y móvil; revisar referencias SOLID; enviar URL y credenciales Admin por el canal privado de entrega y confirmar periodo de disponibilidad.
+1. **Verificar producción** cuando el acceso de red esté disponible: health, login Admin, RBAC, tiles OSM, CRUD Wialon, dashboard, filtros y arranque en frío. Criterio: recorrido sin errores inesperados y tiles servidos correctamente.
+2. **Cerrar la revisión visual** con navegador en 360, 768 y 1440 px; medir contraste WCAG AA y revisar teclado/lector de pantalla. Criterio: sin solapes/desbordes, contraste mínimo 4.5:1 y evidencia registrada.
+3. **Medir UX-07** con Lighthouse móvil y añadir capturas reales. Criterio: rendimiento ≥85, accesibilidad ≥90 y buenas prácticas ≥90; capturas de landing, dashboard, mapa y móvil en README. Lighthouse/navegador no están disponibles en este entorno.
+4. **Completar SEG-06/07:** revisar el primer CI con `pip-audit`/`npm audit` y decidir un limitador de solicitudes compartido compatible con el despliegue. No se debe confiar en cabeceras IP no verificadas.
+5. **Cerrar entrega:** enviar URL y credenciales Admin por canal privado y confirmar disponibilidad por 15 días.
+
+## Validación local de esta ejecución
+
+- Frontend: 65 pruebas Vitest pasaron; `npm audit --offline --audit-level=high` reportó 0 vulnerabilidades.
+- Backend: las pruebas de integración de auditoría se actualizaron para el contrato paginado y la suite se volvió a ejecutar.
+- Producción: frontend y `/health` no fueron accesibles desde este entorno por restricción de red. No se usaron credenciales ni se generaron capturas simuladas.

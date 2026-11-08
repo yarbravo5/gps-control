@@ -73,11 +73,9 @@ Roles disponibles:
 - El dashboard incluye la hora UTC de consulta presentada en hora de Bogotá y actualiza sus métricas cada 30 segundos mientras la pestaña está visible. El mapa y la actualización de posiciones están en el módulo de vehículos.
 - La interfaz de campos personalizados del vehículo se ajusta al ancho real de su panel; el mapa usa tiles canónicos de OSM y conserva el `Referer` requerido por la política. El cambio de tiles requiere un nuevo despliegue para verse en producción.
 
-## Revisión pendiente frente a `docs/prueba_tecnica.md`
+## Estado de cierre
 
-La auditoría completa por identificador, evidencia en código y plan de cierre están en [docs/auditoria_final.md](docs/auditoria_final.md). Los asuntos que todavía requieren evidencia o decisiones de infraestructura son Lighthouse/capturas, revisión manual de accesibilidad en vistas autenticadas, auditoría `pip-audit`, rate limiting distribuido y verificación de producción.
-
-La captura de pantallas exigida por la prueba técnica aún no se incluye. No se usan capturas simuladas como evidencia del dashboard o del mapa.
+La auditoría de requisitos, evidencia y tareas pendientes está en [docs/auditoria_final.md](docs/auditoria_final.md). Aún se requiere acceso al sitio desplegado para comprobar login, mapa, responsive y accesibilidad; tampoco se han generado mediciones Lighthouse ni capturas reales de la aplicación.
 
 ## Stack
 
