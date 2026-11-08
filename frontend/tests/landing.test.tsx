@@ -106,7 +106,7 @@ describe("landing pública", () => {
     await user.type(await screen.findByLabelText("Correo electrónico"), "admin@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "Secret123");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
-    await screen.findByRole("heading", { name: "Panel de control" });
+    await screen.findByRole("heading", { name: "Tu flota, bajo control." });
     act(() => {
       window.history.pushState({}, "", "/");
       window.dispatchEvent(new PopStateEvent("popstate"));

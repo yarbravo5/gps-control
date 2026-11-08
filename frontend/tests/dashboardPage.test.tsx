@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -30,7 +31,7 @@ function renderDashboard() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(<QueryClientProvider client={queryClient}><DashboardPage /></QueryClientProvider>);
+  return render(<MemoryRouter><QueryClientProvider client={queryClient}><DashboardPage /></QueryClientProvider></MemoryRouter>);
 }
 
 describe("DashboardPage", () => {
@@ -41,7 +42,7 @@ describe("DashboardPage", () => {
     renderDashboard();
 
     expect(await screen.findByText("12", { selector: "dd" })).toBeVisible();
-    expect(screen.getByText(/Datos consultados:/)).toHaveTextContent("hora de Bogotá");
+    expect(screen.getByText(/Actualizado/)).toHaveTextContent("a. m.");
     expect(screen.getByRole("figure", { name: "Estado de los vehículos" })).toBeVisible();
     expect(screen.getByRole("figure", { name: "Asignación de conductores" })).toBeVisible();
     expect(screen.getByRole("meter", { name: "En movimiento: 5 de 12" })).toHaveAttribute("aria-valuenow", "5");

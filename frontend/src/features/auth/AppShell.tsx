@@ -1,7 +1,10 @@
 import { useState } from "react";
+import type { PointerEvent } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import { Button } from "../../components/ui/Button";
+import { DashboardIcon } from "../dashboard/DashboardIcon";
+import type { DashboardIconName } from "../dashboard/DashboardIcon";
 import { useAuth } from "./AuthProvider";
 import { navigationItems, roleLabels } from "./navigation";
 
@@ -16,12 +19,31 @@ export function AppShell() {
   };
   const visibleItems = navigationItems.filter((item) => hasPermission(item.permission));
 
-  return <div className="min-h-screen bg-[#f7f4f8] text-slate-950">
+  const updatePointerGlow = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType && event.pointerType !== "mouse") return;
+    const element = event.target instanceof Element ? event.target : null;
+    const target = element?.closest<HTMLButtonElement | HTMLAnchorElement>(".app-shell button, .app-shell a[data-pointer-glow]");
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    target.style.setProperty("--pointer-x", `${event.clientX - rect.left}px`);
+    target.style.setProperty("--pointer-y", `${event.clientY - rect.top}px`);
+  };
+
+  const clearPointerGlow = (event: PointerEvent<HTMLDivElement>) => {
+    const element = event.target instanceof Element ? event.target : null;
+    const target = element?.closest<HTMLButtonElement | HTMLAnchorElement>(".app-shell button, .app-shell a[data-pointer-glow]");
+    if (target && !(event.relatedTarget instanceof Node && target.contains(event.relatedTarget))) {
+      target.style.removeProperty("--pointer-x");
+      target.style.removeProperty("--pointer-y");
+    }
+  };
+
+  return <div className="app-shell min-h-screen text-slate-950" onPointerMove={updatePointerGlow} onPointerOut={clearPointerGlow}>
     <a className="skip-link" href="#contenido-app">Saltar al contenido</a>
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="flex min-h-16 items-center justify-between gap-3 px-4 sm:px-6">
+    <header className="app-topbar sticky top-0 z-30">
+      <div className="app-topbar__inner flex min-h-16 items-center justify-between gap-3 px-4 sm:px-6">
         <div className="flex items-center gap-3">
-          <button aria-controls="app-navigation" aria-expanded={mobileNavigationOpen} aria-label={mobileNavigationOpen ? "Cerrar navegación" : "Abrir navegación"} className="mobile-nav-toggle" onClick={() => setMobileNavigationOpen((open) => !open)} type="button"><span aria-hidden="true" className="text-xl leading-none">{mobileNavigationOpen ? "×" : "☰"}</span></button>
+          <button aria-controls="app-navigation" aria-expanded={mobileNavigationOpen} aria-label={mobileNavigationOpen ? "Cerrar navegación" : "Abrir navegación"} className="mobile-nav-toggle" onClick={() => setMobileNavigationOpen((open) => !open)} type="button"><DashboardIcon className="app-menu-icon" name={mobileNavigationOpen ? "close" : "menu"} /></button>
           <NavLink aria-label="GPS Control, panel de control" className="flex items-center gap-2 rounded focus-visible:outline-2 focus-visible:outline-brand-teal" to="/app"><span aria-hidden="true" className="grid size-9 place-items-center rounded-xl bg-brand-red-action font-black text-white">G</span><span className="text-sm font-extrabold tracking-tight sm:text-base">GPS <span className="text-brand-wine">Control</span></span></NavLink>
         </div>
         <div className="flex items-center gap-3">
@@ -42,13 +64,13 @@ export function AppShell() {
         {visibleItems.some((item) => item.section === "administración") ? <><p className="mt-7 px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted">Administración</p><nav aria-label="Administración" className="grid gap-1">{visibleItems.filter((item) => item.section === "administración").map((item) => <NavItem item={item} key={item.path} onNavigate={() => setMobileNavigationOpen(false)} />)}</nav></> : null}
         <div className="mt-8 rounded-xl border border-teal-900/10 bg-teal-50 p-3"><p className="text-xs font-semibold text-teal-950">Acceso por permisos</p><p className="mt-1 text-xs leading-5 text-teal-900">Las opciones visibles corresponden a los permisos de tu cuenta.</p></div>
       </aside>
-      <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-9" id="contenido-app"><Outlet /></main>
+      <main className="app-main min-h-[calc(100vh-4rem)] min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-9" id="contenido-app"><Outlet /></main>
     </div>
   </div>;
 }
 
 function NavItem({ item, onNavigate }: { item: (typeof navigationItems)[number]; onNavigate: () => void }) {
-  return <NavLink end={item.path === "/app"} onClick={onNavigate} className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal motion-reduce:transition-none ${isActive ? "bg-purple-soft text-wine-dark" : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"}`} to={item.path}><span aria-hidden="true" className="grid size-6 place-items-center text-base text-brand-teal">{navGlyphs[item.path] ?? "•"}</span>{item.label}</NavLink>;
+  return <NavLink end={item.path === "/app"} onClick={onNavigate} className={({ isActive }) => `app-nav-link flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal motion-reduce:transition-none ${isActive ? "bg-purple-soft text-wine-dark" : "text-slate-700 hover:bg-slate-100 hover:text-slate-950"}`} to={item.path}><DashboardIcon className="app-nav-icon" name={navIcons[item.path] ?? "dashboard"} />{item.label}</NavLink>;
 }
 
-const navGlyphs: Record<string, string> = { "/app": "⌂", "/app/vehicles": "◇", "/app/drivers": "♙", "/app/passengers": "♧", "/app/history": "↝", "/app/admin": "⚙" };
+const navIcons: Record<string, DashboardIconName> = { "/app": "dashboard", "/app/vehicles": "vehicle", "/app/drivers": "driver", "/app/passengers": "passenger", "/app/history": "route", "/app/admin": "passenger" };

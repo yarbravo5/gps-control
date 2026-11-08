@@ -53,7 +53,7 @@ describe("autenticación y autorización", () => {
     await user.type(await screen.findByLabelText("Correo electrónico"), "person@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "Secret123");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
-    expect(await screen.findByRole("heading", { name: "Panel de control" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Tu flota, bajo control." })).toBeVisible();
     await user.click(screen.getByRole("link", { name: "Usuarios y roles" }));
     expect(await screen.findByRole("heading", { name: "Usuarios y roles" })).toBeVisible();
   });
@@ -65,7 +65,7 @@ describe("autenticación y autorización", () => {
     await user.type(await screen.findByLabelText("Correo electrónico"), "person@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "Secret123");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
-    await screen.findByRole("heading", { name: "Panel de control" });
+    await screen.findByRole("heading", { name: "Tu flota, bajo control." });
     expect(screen.queryByRole("link", { name: "Usuarios y roles" })).not.toBeInTheDocument();
     window.history.pushState({}, "", "/app/admin");
     window.dispatchEvent(new PopStateEvent("popstate"));
@@ -96,7 +96,7 @@ describe("autenticación y autorización", () => {
     await user.type(await screen.findByLabelText("Correo electrónico"), "person@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "Secret123");
     await user.click(screen.getByRole("button", { name: "Ingresar" }));
-    await screen.findByRole("heading", { name: "Panel de control" });
+    await screen.findByRole("heading", { name: "Tu flota, bajo control." });
     const menuButton = screen.getByRole("button", { name: "Abrir navegación" });
     expect(menuButton).toHaveAttribute("aria-expanded", "false");
     await user.click(menuButton);
