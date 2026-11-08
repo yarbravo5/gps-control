@@ -10,6 +10,7 @@ from app.models import User
 from app.schemas.user import (
     PasswordResetRequest,
     UserCreate,
+    UserPageResponse,
     UserResponse,
     UserUpdate,
 )
@@ -46,21 +47,32 @@ def _map_user_service_error(exc: Exception) -> HTTPException:
     )
 
 
-@router.get("", response_model=list[UserResponse])
+@router.get("", response_model=UserPageResponse)
 def list_users(
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=200),
     sort_by: Literal["id", "name", "email", "role"] = Query(default="id"),
     sort_order: Literal["asc", "desc"] = Query(default="asc"),
+    query: str | None = Query(default=None, max_length=100, alias="q"),
+    role: Literal["admin", "operator", "viewer"] | None = Query(default=None),
     _current_user: User = Depends(require_permission("users:manage")),
     database_session: Session = Depends(get_database_session),
-) -> list[User]:
-    return user_service.list_users(
+) -> UserPageResponse:
+    normalized_query = query.strip() if query and query.strip() else None
+    items = user_service.list_users(
         database_session,
         offset=offset,
         limit=limit,
         sort_by=sort_by,
         sort_order=sort_order,
+        query=normalized_query,
+        role_name=role,
+    )
+    return UserPageResponse(
+        items=items,
+        total=user_service.count_users(database_session, normalized_query, role),
+        offset=offset,
+        limit=limit,
     )
 
 

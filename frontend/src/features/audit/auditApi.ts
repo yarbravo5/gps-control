@@ -11,8 +11,15 @@ export interface AuditLog {
   created_at: string;
 }
 
-export async function listAuditLogs(offset: number, limit: number, sort = "created_at:desc"): Promise<AuditLog[]> {
+export interface AuditLogPage {
+  items: AuditLog[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export async function listAuditLogs(offset: number, limit: number, sort = "created_at:desc", query = ""): Promise<AuditLogPage> {
   const [sort_by, sort_order] = sort.split(":");
-  const response = await httpClient.get<AuditLog[]>("/audit", { params: { offset, limit, sort_by, sort_order } });
+  const response = await httpClient.get<AuditLogPage>("/audit", { params: { offset, limit, sort_by, sort_order, ...(query ? { q: query } : {}) } });
   return response.data;
 }

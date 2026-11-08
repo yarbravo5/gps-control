@@ -18,6 +18,13 @@ def test_only_admin_can_read_audit_logs(client: TestClient):
         headers={"Authorization": f"Bearer {admin['access_token']}"},
     )
     assert admin_response.status_code == 200
+    filtered = client.get(
+        "/api/v1/audit?q=auth.login_succeeded&sort_by=action&sort_order=asc",
+        headers={"Authorization": f"Bearer {admin['access_token']}"},
+    )
+    assert filtered.status_code == 200
+    assert filtered.json()["total"] > 0
+    assert all("auth.login_succeeded" in event["action"] for event in filtered.json()["items"])
 
     for email, password in [
         (OPERATOR_EMAIL, OPERATOR_PASSWORD),

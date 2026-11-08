@@ -15,3 +15,10 @@ class AuditLogResponse(BaseModel):
     details: dict[str, Any] | None
     ip_address: str | None
     created_at: datetime
+
+
+class AuditLogPageResponse(BaseModel):
+    items: list[AuditLogResponse]
+    total: int
+    offset: int
+    limit: int

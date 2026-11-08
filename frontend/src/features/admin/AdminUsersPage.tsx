@@ -22,6 +22,9 @@ export function AdminUsersPage() {
   const queryClient = useQueryClient();
   const [offset, setOffset] = useState(0);
   const [sort, setSort] = useState("id:asc");
+  const [searchInput, setSearchInput] = useState("");
+  const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
   const [mode, setMode] = useState<FormMode | null>(null);
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
   const [name, setName] = useState("");
@@ -32,10 +35,10 @@ export function AdminUsersPage() {
   const [success, setSuccess] = useState("");
   const [formValidationError, setFormValidationError] = useState("");
   const usersQuery = useQuery({
-    queryKey: ["managed-users", offset, sort],
-    queryFn: () => listUsers(offset, PAGE_SIZE, sort),
+    queryKey: ["managed-users", offset, sort, query, roleFilter],
+    queryFn: () => listUsers(offset, PAGE_SIZE, sort, query, roleFilter),
   });
-  const users = usersQuery.data ?? [];
+  const users = usersQuery.data?.items ?? [];
 
   const refreshUsers = async (message: string) => {
     await queryClient.invalidateQueries({ queryKey: ["managed-users"] });
@@ -120,6 +123,15 @@ export function AdminUsersPage() {
         <button className="button-primary min-h-11 rounded-control px-4 text-sm font-semibold" onClick={openCreate} type="button">Crear usuario</button>
       </header>
       {success ? <p aria-live="polite" className="text-sm text-teal-900" role="status">{success}</p> : null}
+      <form className="grid min-w-0 gap-3 rounded-card border border-slate-200 bg-white p-4 sm:grid-cols-[minmax(12rem,1fr)_12rem_auto] sm:items-end" onSubmit={(event) => { event.preventDefault(); setQuery(searchInput.trim()); setOffset(0); }}>
+        <TextField label="Buscar usuario" onChange={(event) => setSearchInput(event.target.value)} placeholder="Nombre o correo" value={searchInput} />
+        <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-800">Filtrar por rol
+          <select className="min-h-11 w-full min-w-0 rounded-control border border-slate-300 bg-white px-3 text-slate-900" onChange={(event) => { setRoleFilter(event.target.value); setOffset(0); }} value={roleFilter}>
+            <option value="">Todos los roles</option><option value="admin">Administrador</option><option value="operator">Operador</option><option value="viewer">Visualizador</option>
+          </select>
+        </label>
+        <button className="button-primary min-h-11 rounded-control px-4 text-sm font-semibold" type="submit">Buscar</button>
+      </form>
       <SortSelect options={[{ value: "name:asc", label: "Nombre (A–Z)" }, { value: "name:desc", label: "Nombre (Z–A)" }, { value: "email:asc", label: "Correo (A–Z)" }, { value: "role:asc", label: "Rol (A–Z)" }]} onChange={(value) => { setSort(value); setOffset(0); }} value={sort} />
       {mode ? <form aria-label={mode === "create" ? "Crear usuario" : mode === "edit" ? "Editar usuario" : "Restablecer contraseña"} className="grid gap-3 border-y border-slate-200 py-5" onSubmit={submitForm}>
         <h2 className="text-lg font-semibold text-slate-950">{mode === "create" ? "Nuevo usuario" : mode === "edit" ? `Editar ${selectedUser?.email}` : `Restablecer contraseña de ${selectedUser?.email}`}</h2>
@@ -161,7 +173,7 @@ export function AdminUsersPage() {
         </ul>
         <nav aria-label="Paginación de usuarios" className="flex justify-end gap-2 border-t border-slate-200 pt-4">
           <button className="min-h-11 rounded-control border border-brand-teal px-4 text-sm font-semibold text-teal-900 disabled:opacity-50" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))} type="button">Anterior</button>
-          <button className="min-h-11 rounded-control border border-brand-teal px-4 text-sm font-semibold text-teal-900 disabled:opacity-50" disabled={users.length < PAGE_SIZE} onClick={() => setOffset(offset + PAGE_SIZE)} type="button">Siguiente</button>
+          <button className="min-h-11 rounded-control border border-brand-teal px-4 text-sm font-semibold text-teal-900 disabled:opacity-50" disabled={!usersQuery.data || offset + users.length >= usersQuery.data.total} onClick={() => setOffset(offset + PAGE_SIZE)} type="button">Siguiente</button>
         </nav>
       </> : null}
     </section>

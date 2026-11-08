@@ -59,6 +59,7 @@ def list_audit_logs(
     limit: int = 100,
     sort_by: str = "created_at",
     sort_order: str = "desc",
+    query: str | None = None,
 ) -> list[AuditLog]:
     return audit_repository.list_audit_logs(
         database_session,
@@ -66,4 +67,9 @@ def list_audit_logs(
         limit=limit,
         sort_by=sort_by,
         sort_order=sort_order,
+        query=query,
     )
+
+
+def count_audit_logs(database_session: Session, query: str | None = None) -> int:
+    return audit_repository.count_audit_logs(database_session, query=query)

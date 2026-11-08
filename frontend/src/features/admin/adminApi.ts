@@ -13,6 +13,13 @@ export interface ManagedUser {
   last_login_at: string | null;
 }
 
+export interface UserPage {
+  items: ManagedUser[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
 export interface CreateUserPayload {
   email: string;
   name: string;
@@ -20,9 +27,11 @@ export interface CreateUserPayload {
   role: AdminRole;
 }
 
-export async function listUsers(offset: number, limit: number, sort = "id:asc"): Promise<ManagedUser[]> {
+export async function listUsers(offset: number, limit: number, sort = "id:asc", query = "", role = ""): Promise<UserPage> {
   const [sort_by, sort_order] = sort.split(":");
-  const response = await httpClient.get<ManagedUser[]>("/users", { params: { offset, limit, sort_by, sort_order } });
+  const response = await httpClient.get<UserPage>("/users", {
+    params: { offset, limit, sort_by, sort_order, ...(query ? { q: query } : {}), ...(role ? { role } : {}) },
+  });
   return response.data;
 }
 

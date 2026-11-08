@@ -22,9 +22,14 @@ const VALIDATION_FIELDS: Record<string, string> = {
 };
 
 function describeValidationErrors(data: unknown): string | null {
-  if (!data || typeof data !== "object" || !("detail" in data) || !Array.isArray(data.detail)) return null;
+  if (!data || typeof data !== "object") return null;
+  const problem = data as { detail?: unknown; errors?: unknown };
+  const validationErrors = Array.isArray(problem.errors)
+    ? problem.errors
+    : Array.isArray(problem.detail) ? problem.detail : null;
+  if (!validationErrors) return null;
 
-  const issues = data.detail.flatMap((issue: unknown) => {
+  const issues = validationErrors.flatMap((issue: unknown) => {
     if (!issue || typeof issue !== "object") return [];
     const entry = issue as { loc?: unknown[]; msg?: unknown };
     if (typeof entry.msg !== "string") return [];

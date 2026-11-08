@@ -55,4 +55,23 @@ describe("normalizeApiError", () => {
     expect(result.message).toContain("Rol: selecciona un rol válido.");
     expect(result.message).not.toContain("Unprocessable entity");
   });
+
+  it("reads validation errors from the RFC 7807 response", () => {
+    const axiosLikeError = Object.assign(new Error("Unprocessable entity"), {
+      isAxiosError: true,
+      response: {
+        status: 422,
+        data: {
+          type: "about:blank",
+          title: "Datos no válidos",
+          status: 422,
+          detail: "La solicitud contiene datos no válidos.",
+          errors: [{ loc: ["body", "password"], msg: "Value error, La contraseña debe incluir al menos una letra.", type: "value_error" }],
+        },
+      },
+    });
+
+    expect(normalizeApiError(axiosLikeError).message).toContain("Contraseña temporal:");
+    expect(normalizeApiError(axiosLikeError).message).toContain("debe incluir al menos una letra.");
+  });
 });

@@ -46,6 +46,10 @@ def test_people_read_endpoints_require_rbac_and_sanitize_wialon_errors(client: T
             headers=viewer_headers,
         )
         assert invalid_sort.status_code == 422
+        assert invalid_sort.headers["content-type"].startswith("application/problem+json")
+        assert invalid_sort.json()["type"] == "about:blank"
+        assert invalid_sort.json()["status"] == 422
+        assert invalid_sort.json()["errors"][0]["loc"][-1] == "sort_by"
         denied = client.post(
             "/api/v1/passengers",
             headers=viewer_headers,

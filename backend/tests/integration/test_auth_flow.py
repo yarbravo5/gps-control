@@ -70,6 +70,19 @@ def test_operator_cannot_manage_users_or_escalate_role(client: TestClient) -> No
     assert escalation_response.status_code == 403
 
 
+def test_admin_can_filter_and_sort_user_pages(client: TestClient) -> None:
+    admin = login(client, ADMIN_EMAIL, ADMIN_PASSWORD)
+    response = client.get(
+        "/api/v1/users?q=visual&role=viewer&sort_by=email&sort_order=desc",
+        headers={"Authorization": f"Bearer {admin['access_token']}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 1
+    assert len(response.json()["items"]) == 1
+    assert response.json()["items"][0]["email"] == VIEWER_EMAIL
+
+
 def test_role_changes_apply_to_an_existing_access_token(client: TestClient) -> None:
     admin_login = login(client, ADMIN_EMAIL, ADMIN_PASSWORD)
     admin_headers = {"Authorization": f"Bearer {admin_login['access_token']}"}

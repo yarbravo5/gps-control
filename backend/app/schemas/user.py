@@ -74,3 +74,10 @@ class UserResponse(BaseModel):
 
 class CurrentUserResponse(UserResponse):
     permissions: list[str]
+
+
+class UserPageResponse(BaseModel):
+    items: list[UserResponse]
+    total: int
+    offset: int
+    limit: int

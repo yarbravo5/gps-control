@@ -40,7 +40,7 @@ describe("páginas de administración", () => {
 
   it("crea un usuario con rol y contraseña temporal", async () => {
     const user = userEvent.setup();
-    getApi.mockResolvedValue({ data: [] } as never);
+    getApi.mockResolvedValue({ data: { items: [], total: 0, offset: 0, limit: 25 } } as never);
     postApi.mockResolvedValue({ data: managedUser } as never);
     renderPage(<AdminUsersPage />);
 
@@ -62,7 +62,7 @@ describe("páginas de administración", () => {
 
   it("valida la contraseña antes de enviar y conserva el rol seleccionado", async () => {
     const user = userEvent.setup();
-    getApi.mockResolvedValue({ data: [] } as never);
+    getApi.mockResolvedValue({ data: { items: [], total: 0, offset: 0, limit: 25 } } as never);
     renderPage(<AdminUsersPage />);
 
     await user.click(await screen.findByRole("button", { name: "Crear usuario" }));
@@ -78,7 +78,7 @@ describe("páginas de administración", () => {
 
   it("restablece la contraseña con el endpoint administrativo", async () => {
     const user = userEvent.setup();
-    getApi.mockResolvedValue({ data: [managedUser] } as never);
+    getApi.mockResolvedValue({ data: { items: [managedUser], total: 1, offset: 0, limit: 25 } } as never);
     postApi.mockResolvedValue({ data: managedUser } as never);
     renderPage(<AdminUsersPage />);
 
@@ -92,7 +92,7 @@ describe("páginas de administración", () => {
   });
 
   it("muestra actor, acción y hora de auditoría sin volcar details", async () => {
-    getApi.mockResolvedValue({ data: [{
+    getApi.mockResolvedValue({ data: { items: [{
       id: 11,
       user_id: 7,
       action: "user.create",
@@ -101,7 +101,7 @@ describe("páginas de administración", () => {
       details: { password: "must-not-render" },
       ip_address: "127.0.0.1",
       created_at: "2026-11-07T12:00:00Z",
-    }] } as never);
+    }], total: 1, offset: 0, limit: 25 } } as never);
     renderPage(<AuditPage />);
 
     expect(await screen.findByText("user.create")).toBeVisible();
@@ -111,7 +111,7 @@ describe("páginas de administración", () => {
   });
 
   it("presenta el estado vacío de auditoría", async () => {
-    getApi.mockResolvedValue({ data: [] } as never);
+    getApi.mockResolvedValue({ data: { items: [], total: 0, offset: 0, limit: 25 } } as never);
     renderPage(<AuditPage />);
 
     expect(await screen.findByRole("heading", { name: "No hay eventos de auditoría" })).toBeVisible();

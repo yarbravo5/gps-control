@@ -39,6 +39,19 @@ def test_unhandled_errors_are_sanitized_and_keep_security_headers():
         app.router.routes.remove(route)
 
     assert response.status_code == 500
-    assert response.json() == {"detail": "Error interno del servidor."}
+    assert response.json() == {
+        "type": "about:blank",
+        "title": "Error interno del servidor",
+        "status": 500,
+        "detail": "Error interno del servidor.",
+        "instance": "/__test_boom",
+    }
     assert "database password leaked" not in response.text
     assert response.headers["x-content-type-options"] == "nosniff"
+
+
+def test_openapi_documents_problem_details_response_media_type():
+    response_schema = app.openapi()["paths"]["/api/v1/users"]["get"]["responses"]["422"]
+
+    assert "application/problem+json" in response_schema["content"]
+    assert "application/json" not in response_schema["content"]
