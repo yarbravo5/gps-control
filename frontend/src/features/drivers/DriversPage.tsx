@@ -5,6 +5,7 @@ import { EmptyState } from "../../components/feedback/EmptyState";
 import { ErrorState } from "../../components/feedback/ErrorState";
 import { LoadingState } from "../../components/feedback/LoadingState";
 import { TextField } from "../../components/ui/TextField";
+import { SortSelect } from "../../components/ui/SortSelect";
 import { ApiError } from "../../services/api/apiError";
 import { useAuth } from "../auth/AuthProvider";
 import { CustomFieldsEditor } from "../foundation/CustomFieldsEditor";
@@ -46,6 +47,7 @@ export function DriversPage() {
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
   const [offset, setOffset] = useState(0);
+  const [sort, setSort] = useState("name:asc");
   const [formOpen, setFormOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [form, setForm] = useState<DriverFormValues>(emptyDriverForm);
@@ -56,8 +58,8 @@ export function DriversPage() {
   const resources = resourcesQuery.data ?? [];
   const selectedResourceId = resourceId ?? resources[0]?.id ?? null;
   const driversQuery = useQuery({
-    queryKey: ["drivers", selectedResourceId, query, offset],
-    queryFn: () => listDrivers(selectedResourceId as number, query, offset, PAGE_SIZE),
+    queryKey: ["drivers", selectedResourceId, query, offset, sort],
+    queryFn: () => listDrivers(selectedResourceId as number, query, offset, PAGE_SIZE, sort),
     enabled: selectedResourceId !== null,
   });
   const page = driversQuery.data;
@@ -188,13 +190,14 @@ export function DriversPage() {
               <button className="min-h-11 rounded-control border border-slate-300 px-4 text-sm font-semibold" onClick={() => { setPendingDelete(null); deleteMutation.reset(); }} type="button">Cancelar</button>
             </div>
           </section> : null}
-          <div className="grid gap-3 sm:grid-cols-[minmax(12rem,0.7fr)_minmax(14rem,1.3fr)] sm:items-end">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(12rem,0.7fr)_minmax(14rem,1.3fr)] sm:items-end">
             <ResourcePicker resources={resources} selectedResourceId={selectedResourceId} onChange={(id) => { setResourceId(id); setOffset(0); }} />
             <form className="grid gap-3 sm:grid-cols-[minmax(12rem,1fr)_auto] sm:items-end" onSubmit={submitSearch}>
               <TextField label="Buscar conductor" onChange={(event) => setSearchInput(event.target.value)} value={searchInput} />
               <button className="button-primary min-h-11 rounded-control px-4 text-sm font-semibold" type="submit">Buscar</button>
             </form>
           </div>
+          <SortSelect options={[{ value: "name:asc", label: "Nombre (A–Z)" }, { value: "name:desc", label: "Nombre (Z–A)" }, { value: "code:asc", label: "Código (A–Z)" }, { value: "phone:asc", label: "Teléfono" }, { value: "vehicle:asc", label: "Vehículo vinculado" }]} onChange={(value) => { setSort(value); setOffset(0); }} value={sort} />
           {driversQuery.isPending ? <LoadingState label="Consultando conductores" /> : null}
           {driversQuery.isError ? <ErrorState description="No fue posible consultar los conductores." onRetry={() => void driversQuery.refetch()} /> : null}
           {page?.items.length === 0 ? <EmptyState title="No hay conductores en este recurso" description={query ? "Cambia el término de búsqueda para consultar otros conductores." : "Los conductores de Wialon aparecerán aquí."} /> : null}

@@ -57,9 +57,13 @@ def list_audit_logs(
     database_session: Session,
     offset: int = 0,
     limit: int = 100,
+    sort_by: str = "created_at",
+    sort_order: str = "desc",
 ) -> list[AuditLog]:
     return audit_repository.list_audit_logs(
         database_session,
         offset=offset,
         limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )

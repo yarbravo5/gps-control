@@ -20,8 +20,9 @@ export interface CreateUserPayload {
   role: AdminRole;
 }
 
-export async function listUsers(offset: number, limit: number): Promise<ManagedUser[]> {
-  const response = await httpClient.get<ManagedUser[]>("/users", { params: { offset, limit } });
+export async function listUsers(offset: number, limit: number, sort = "id:asc"): Promise<ManagedUser[]> {
+  const [sort_by, sort_order] = sort.split(":");
+  const response = await httpClient.get<ManagedUser[]>("/users", { params: { offset, limit, sort_by, sort_order } });
   return response.data;
 }
 

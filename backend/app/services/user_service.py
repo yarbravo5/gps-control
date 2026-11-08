@@ -32,11 +32,15 @@ def list_users(
     database_session: Session,
     offset: int = 0,
     limit: int = 100,
+    sort_by: str = "id",
+    sort_order: str = "asc",
 ) -> list[User]:
     return user_repository.list_users(
         database_session,
         offset=offset,
         limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
 
 

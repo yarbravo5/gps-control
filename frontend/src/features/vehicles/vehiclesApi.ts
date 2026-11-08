@@ -61,6 +61,7 @@ export interface VehicleFilters {
   status: VehicleStatus | "";
   offset: number;
   limit: number;
+  sortOrder?: "asc" | "desc";
 }
 
 export async function listVehicles(filters: VehicleFilters): Promise<VehiclePage> {
@@ -70,6 +71,7 @@ export async function listVehicles(filters: VehicleFilters): Promise<VehiclePage
       ...(filters.status ? { status: filters.status } : {}),
       offset: filters.offset,
       limit: filters.limit,
+      ...(filters.sortOrder ? { sort_order: filters.sortOrder } : {}),
     },
   });
   return response.data;

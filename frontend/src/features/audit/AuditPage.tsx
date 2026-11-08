@@ -4,6 +4,7 @@ import { useState } from "react";
 import { EmptyState } from "../../components/feedback/EmptyState";
 import { ErrorState } from "../../components/feedback/ErrorState";
 import { LoadingState } from "../../components/feedback/LoadingState";
+import { SortSelect } from "../../components/ui/SortSelect";
 import { listAuditLogs } from "./auditApi";
 
 const PAGE_SIZE = 25;
@@ -15,15 +16,17 @@ const bogotaDate = new Intl.DateTimeFormat("es-CO", {
 
 export function AuditPage() {
   const [offset, setOffset] = useState(0);
+  const [sort, setSort] = useState("created_at:desc");
   const auditQuery = useQuery({
-    queryKey: ["audit-logs", offset],
-    queryFn: () => listAuditLogs(offset, PAGE_SIZE),
+    queryKey: ["audit-logs", offset, sort],
+    queryFn: () => listAuditLogs(offset, PAGE_SIZE, sort),
   });
   const logs = auditQuery.data ?? [];
 
   return (
     <section aria-labelledby="audit-title" className="grid gap-5">
       <header><p className="eyebrow">Administración</p><h1 className="text-2xl font-bold text-slate-950" id="audit-title">Registro de auditoría</h1></header>
+      <SortSelect options={[{ value: "created_at:desc", label: "Más recientes" }, { value: "created_at:asc", label: "Más antiguos" }, { value: "action:asc", label: "Acción (A–Z)" }, { value: "entity:asc", label: "Entidad (A–Z)" }]} onChange={(value) => { setSort(value); setOffset(0); }} value={sort} />
       {auditQuery.isPending ? <LoadingState label="Consultando eventos de auditoría" /> : null}
       {auditQuery.isError ? <ErrorState description="No fue posible consultar el registro de auditoría." onRetry={() => void auditQuery.refetch()} /> : null}
       {auditQuery.data && logs.length === 0 ? <EmptyState title="No hay eventos de auditoría" description="Los cambios registrados aparecerán en esta lista." /> : null}

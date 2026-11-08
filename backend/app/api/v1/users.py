@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
@@ -48,6 +50,8 @@ def _map_user_service_error(exc: Exception) -> HTTPException:
 def list_users(
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=200),
+    sort_by: Literal["id", "name", "email", "role"] = Query(default="id"),
+    sort_order: Literal["asc", "desc"] = Query(default="asc"),
     _current_user: User = Depends(require_permission("users:manage")),
     database_session: Session = Depends(get_database_session),
 ) -> list[User]:
@@ -55,6 +59,8 @@ def list_users(
         database_session,
         offset=offset,
         limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
 
 

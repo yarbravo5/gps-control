@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import asc, desc, select
 from sqlalchemy.orm import Session
 
 from app.models import AuditLog
@@ -33,11 +33,15 @@ def list_audit_logs(
     database_session: Session,
     offset: int = 0,
     limit: int = 100,
+    sort_by: str = "created_at",
+    sort_order: str = "desc",
 ) -> list[AuditLog]:
+    sort_columns = {"created_at": AuditLog.created_at, "action": AuditLog.action, "entity": AuditLog.entity}
+    ordering = desc(sort_columns[sort_by]) if sort_order == "desc" else asc(sort_columns[sort_by])
     return list(
         database_session.scalars(
             select(AuditLog)
-            .order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
+            .order_by(ordering, AuditLog.id.desc())
             .offset(offset)
             .limit(limit)
         )

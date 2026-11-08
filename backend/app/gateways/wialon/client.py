@@ -231,12 +231,19 @@ class WialonClient:
         return resource_from_wialon(item)
 
     def list_drivers(
-        self, resource_id: int, query: str | None, offset: int, limit: int
+        self, resource_id: int, query: str | None, offset: int, limit: int,
+        sort_by: str = "name", sort_order: str = "asc",
     ) -> tuple[list[WialonDriver], int]:
         resource = self.get_resource(resource_id, self.RESOURCE_DRIVER_FLAGS)
         if resource is None:
             return [], 0
-        drivers = sorted(resource.drivers, key=lambda driver: driver.name.casefold())
+        driver_sort_keys = {
+            "name": lambda driver: driver.name.casefold(),
+            "code": lambda driver: driver.code.casefold(),
+            "phone": lambda driver: driver.phone.casefold(),
+            "vehicle": lambda driver: driver.bound_unit_id or 0,
+        }
+        drivers = sorted(resource.drivers, key=driver_sort_keys[sort_by], reverse=sort_order == "desc")
         if query:
             needle = query.casefold()
             drivers = [
@@ -335,12 +342,19 @@ class WialonClient:
         return resource.drivers[0]
 
     def list_passengers(
-        self, resource_id: int, query: str | None, offset: int, limit: int
+        self, resource_id: int, query: str | None, offset: int, limit: int,
+        sort_by: str = "name", sort_order: str = "asc",
     ) -> tuple[list[WialonPassenger], int]:
         resource = self.get_resource(resource_id, self.RESOURCE_PASSENGER_FLAGS)
         if resource is None:
             return [], 0
-        passengers = sorted(resource.passengers, key=lambda item: item.name.casefold())
+        passenger_sort_keys = {
+            "name": lambda item: item.name.casefold(),
+            "code": lambda item: item.code.casefold(),
+            "timezone": lambda item: item.timezone,
+            "vehicle": lambda item: item.bound_unit_id or 0,
+        }
+        passengers = sorted(resource.passengers, key=passenger_sort_keys[sort_by], reverse=sort_order == "desc")
         if query:
             needle = query.casefold()
             passengers = [

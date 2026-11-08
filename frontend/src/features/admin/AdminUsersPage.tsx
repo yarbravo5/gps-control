@@ -5,6 +5,7 @@ import { EmptyState } from "../../components/feedback/EmptyState";
 import { ErrorState } from "../../components/feedback/ErrorState";
 import { LoadingState } from "../../components/feedback/LoadingState";
 import { TextField } from "../../components/ui/TextField";
+import { SortSelect } from "../../components/ui/SortSelect";
 import { ApiError } from "../../services/api/apiError";
 import { createUser, listUsers, resetUserPassword, updateUser } from "./adminApi";
 import type { AdminRole, CreateUserPayload, ManagedUser } from "./adminApi";
@@ -20,6 +21,7 @@ type FormMode = "create" | "edit" | "reset";
 export function AdminUsersPage() {
   const queryClient = useQueryClient();
   const [offset, setOffset] = useState(0);
+  const [sort, setSort] = useState("id:asc");
   const [mode, setMode] = useState<FormMode | null>(null);
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
   const [name, setName] = useState("");
@@ -30,8 +32,8 @@ export function AdminUsersPage() {
   const [success, setSuccess] = useState("");
   const [formValidationError, setFormValidationError] = useState("");
   const usersQuery = useQuery({
-    queryKey: ["managed-users", offset],
-    queryFn: () => listUsers(offset, PAGE_SIZE),
+    queryKey: ["managed-users", offset, sort],
+    queryFn: () => listUsers(offset, PAGE_SIZE, sort),
   });
   const users = usersQuery.data ?? [];
 
@@ -118,6 +120,7 @@ export function AdminUsersPage() {
         <button className="button-primary min-h-11 rounded-control px-4 text-sm font-semibold" onClick={openCreate} type="button">Crear usuario</button>
       </header>
       {success ? <p aria-live="polite" className="text-sm text-teal-900" role="status">{success}</p> : null}
+      <SortSelect options={[{ value: "name:asc", label: "Nombre (A–Z)" }, { value: "name:desc", label: "Nombre (Z–A)" }, { value: "email:asc", label: "Correo (A–Z)" }, { value: "role:asc", label: "Rol (A–Z)" }]} onChange={(value) => { setSort(value); setOffset(0); }} value={sort} />
       {mode ? <form aria-label={mode === "create" ? "Crear usuario" : mode === "edit" ? "Editar usuario" : "Restablecer contraseña"} className="grid gap-3 border-y border-slate-200 py-5" onSubmit={submitForm}>
         <h2 className="text-lg font-semibold text-slate-950">{mode === "create" ? "Nuevo usuario" : mode === "edit" ? `Editar ${selectedUser?.email}` : `Restablecer contraseña de ${selectedUser?.email}`}</h2>
         {mode !== "reset" ? <>

@@ -7,10 +7,10 @@ from tests.conftest import ADMIN_EMAIL, ADMIN_PASSWORD, VIEWER_EMAIL, VIEWER_PAS
 
 
 class FakePeopleGateway:
-    def list_drivers(self, resource_id, query, offset, limit):
+    def list_drivers(self, resource_id, query, offset, limit, sort_by="name", sort_order="asc"):
         raise WialonApiError(4)
 
-    def list_passengers(self, resource_id, query, offset, limit):
+    def list_passengers(self, resource_id, query, offset, limit, sort_by="name", sort_order="asc"):
         return [], 0
 
     def search_resources(self, offset, limit):
@@ -23,7 +23,7 @@ class FakePeopleGateway:
         return WialonResourceSearchResult([resource] if offset == 0 else [], 1)
 
 
-def test_people_read_endpoints_require_rbac_and_sanitize_wialon_errors(client: TestClient):
+def test_people_read_endpoints_require_rbac_and_sanitize_wialon_errors(client: TestClient, caplog):
     client.app.dependency_overrides[get_wialon_gateway] = lambda: FakePeopleGateway()
     try:
         admin = login(client, ADMIN_EMAIL, ADMIN_PASSWORD)
@@ -36,6 +36,16 @@ def test_people_read_endpoints_require_rbac_and_sanitize_wialon_errors(client: T
         viewer_headers = {"Authorization": f"Bearer {viewer['access_token']}"}
         read = client.get("/api/v1/passengers?resource_id=20", headers=viewer_headers)
         assert read.status_code == 200 and read.json()["total"] == 0
+        sorted_read = client.get(
+            "/api/v1/passengers?resource_id=20&sort_by=timezone&sort_order=desc",
+            headers=viewer_headers,
+        )
+        assert sorted_read.status_code == 200
+        invalid_sort = client.get(
+            "/api/v1/passengers?resource_id=20&sort_by=phone",
+            headers=viewer_headers,
+        )
+        assert invalid_sort.status_code == 422
         denied = client.post(
             "/api/v1/passengers",
             headers=viewer_headers,
@@ -48,6 +58,9 @@ def test_people_read_endpoints_require_rbac_and_sanitize_wialon_errors(client: T
             json={"resource_id": 20, "unit_id": 30},
         )
         assert denied_binding.status_code == 403
+        assert "Access denied:" in caplog.text
+        assert "permission=drivers:bind" in caplog.text
+        assert VIEWER_EMAIL not in caplog.text
     finally:
         client.app.dependency_overrides.pop(get_wialon_gateway, None)
 

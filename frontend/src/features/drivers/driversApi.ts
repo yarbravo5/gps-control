@@ -23,9 +23,11 @@ export async function listDrivers(
   query: string,
   offset: number,
   limit: number,
+  sort = "name:asc",
 ): Promise<DriverPage> {
+  const [sort_by, sort_order] = sort.split(":");
   const response = await httpClient.get<DriverPage>("/drivers", {
-    params: { resource_id: resourceId, ...(query ? { q: query } : {}), offset, limit },
+    params: { resource_id: resourceId, ...(query ? { q: query } : {}), offset, limit, sort_by, sort_order },
   });
   return response.data;
 }

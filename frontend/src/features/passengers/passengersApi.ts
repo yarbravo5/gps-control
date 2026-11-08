@@ -22,9 +22,11 @@ export async function listPassengers(
   query: string,
   offset: number,
   limit: number,
+  sort = "name:asc",
 ): Promise<PassengerPage> {
+  const [sort_by, sort_order] = sort.split(":");
   const response = await httpClient.get<PassengerPage>("/passengers", {
-    params: { resource_id: resourceId, ...(query ? { q: query } : {}), offset, limit },
+    params: { resource_id: resourceId, ...(query ? { q: query } : {}), offset, limit, sort_by, sort_order },
   });
   return response.data;
 }

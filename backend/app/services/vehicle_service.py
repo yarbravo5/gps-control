@@ -61,13 +61,14 @@ def list_vehicles(
     status: VehicleStatus | None,
     offset: int,
     limit: int,
+    sort_order: str = "asc",
     now: datetime | None = None,
 ) -> VehiclePageDTO:
     current_time = now or get_current_utc_datetime()
     if current_time.tzinfo is None:
         current_time = current_time.replace(tzinfo=timezone.utc)
 
-    if status is None:
+    if status is None and sort_order == "asc":
         result = gateway.search_items(query, offset, limit)
         vehicles = [
             map_vehicle(
@@ -84,7 +85,7 @@ def list_vehicles(
             limit=limit,
         )
 
-    # Status is derived locally; scan matching units before paginating to keep totals accurate.
+    # Derived state and descending sort require scanning before pagination.
     matched = []
     scan_offset = 0
     scan_size = 100
@@ -103,12 +104,14 @@ def list_vehicles(
                     now=current_time,
                     no_signal_after_seconds=settings.wialon_no_signal_after_seconds,
                 )
-            ).status
-            == status
+            )
+            and (status is None or vehicle.status == status)
         )
         scan_offset += len(result.items)
         if scan_offset >= total:
             break
+    if sort_order == "desc":
+        matched.sort(key=lambda vehicle: vehicle.name.casefold(), reverse=True)
     return VehiclePageDTO(
         items=matched[offset : offset + limit],
         total=len(matched),

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.orm import Session
 
@@ -58,6 +60,8 @@ def list_drivers(
     q: str | None = Query(default=None, max_length=100),
     offset: int = Query(default=0, ge=0, le=100_000),
     limit: int = Query(default=50, ge=1, le=100),
+    sort_by: Literal["name", "code", "phone", "vehicle"] = Query(default="name"),
+    sort_order: Literal["asc", "desc"] = Query(default="asc"),
     _current_user: User = Depends(require_permission("drivers:view")),
     gateway: WialonClient = Depends(get_wialon_gateway),
 ) -> DriverListResponse:
@@ -68,6 +72,8 @@ def list_drivers(
             query=q.strip() if q and q.strip() else None,
             offset=offset,
             limit=limit,
+            sort_by=sort_by,
+            sort_order=sort_order,
         )
         return DriverListResponse(
             items=[_driver_response(item) for item in items],

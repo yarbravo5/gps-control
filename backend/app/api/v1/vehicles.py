@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 from sqlalchemy.orm import Session
@@ -45,6 +45,7 @@ def list_vehicles(
     vehicle_status: VehicleStatus | None = Query(default=None, alias="status"),
     offset: int = Query(default=0, ge=0, le=100_000),
     limit: int = Query(default=50, ge=1, le=100),
+    sort_order: Literal["asc", "desc"] = Query(default="asc"),
     _current_user: User = Depends(require_permission("vehicles:view")),
     gateway: WialonClient = Depends(get_wialon_gateway),
 ) -> VehicleListResponse:
@@ -55,6 +56,7 @@ def list_vehicles(
             status=vehicle_status,
             offset=offset,
             limit=limit,
+            sort_order=sort_order,
         )
         return VehicleListResponse(
             items=[VehicleResponse.model_validate(vehicle) for vehicle in result.items],

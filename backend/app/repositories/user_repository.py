@@ -1,4 +1,4 @@
-from sqlalchemy import func, select
+from sqlalchemy import asc, desc, func, select
 from sqlalchemy.orm import Session
 
 from app.models import Role, User
@@ -19,10 +19,18 @@ def list_users(
     database_session: Session,
     offset: int = 0,
     limit: int = 100,
+    sort_by: str = "id",
+    sort_order: str = "asc",
 ) -> list[User]:
+    sort_columns = {"name": User.name, "email": User.email, "role": Role.name, "id": User.id}
+    column = sort_columns[sort_by]
+    ordering = desc(column) if sort_order == "desc" else asc(column)
+    statement = select(User)
+    if sort_by == "role":
+        statement = statement.join(User.role)
     return list(
         database_session.scalars(
-            select(User).order_by(User.id).offset(offset).limit(limit)
+            statement.order_by(ordering, User.id.asc()).offset(offset).limit(limit)
         )
     )
 

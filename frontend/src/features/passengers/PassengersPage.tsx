@@ -5,6 +5,7 @@ import { EmptyState } from "../../components/feedback/EmptyState";
 import { ErrorState } from "../../components/feedback/ErrorState";
 import { LoadingState } from "../../components/feedback/LoadingState";
 import { TextField } from "../../components/ui/TextField";
+import { SortSelect } from "../../components/ui/SortSelect";
 import { ApiError } from "../../services/api/apiError";
 import { useAuth } from "../auth/AuthProvider";
 import { CustomFieldsEditor } from "../foundation/CustomFieldsEditor";
@@ -44,6 +45,7 @@ export function PassengersPage() {
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
   const [offset, setOffset] = useState(0);
+  const [sort, setSort] = useState("name:asc");
   const [formOpen, setFormOpen] = useState(false);
   const [editingPassenger, setEditingPassenger] = useState<Passenger | null>(null);
   const [form, setForm] = useState<PassengerFormValues>(emptyPassengerForm);
@@ -54,8 +56,8 @@ export function PassengersPage() {
   const resources = resourcesQuery.data ?? [];
   const selectedResourceId = resourceId ?? resources[0]?.id ?? null;
   const passengersQuery = useQuery({
-    queryKey: ["passengers", selectedResourceId, query, offset],
-    queryFn: () => listPassengers(selectedResourceId as number, query, offset, PAGE_SIZE),
+    queryKey: ["passengers", selectedResourceId, query, offset, sort],
+    queryFn: () => listPassengers(selectedResourceId as number, query, offset, PAGE_SIZE, sort),
     enabled: selectedResourceId !== null,
   });
   const page = passengersQuery.data;
@@ -189,6 +191,7 @@ export function PassengersPage() {
               <button className="button-primary min-h-11 rounded-control px-4 text-sm font-semibold" type="submit">Buscar</button>
             </form>
           </div>
+          <SortSelect options={[{ value: "name:asc", label: "Nombre (A–Z)" }, { value: "name:desc", label: "Nombre (Z–A)" }, { value: "code:asc", label: "Código (A–Z)" }, { value: "timezone:asc", label: "Zona horaria" }, { value: "vehicle:asc", label: "Vehículo vinculado" }]} onChange={(value) => { setSort(value); setOffset(0); }} value={sort} />
           {passengersQuery.isPending ? <LoadingState label="Consultando pasajeros" /> : null}
           {passengersQuery.isError ? <ErrorState description="No fue posible consultar los pasajeros." onRetry={() => void passengersQuery.refetch()} /> : null}
           {page?.items.length === 0 ? <EmptyState title="No hay pasajeros en este recurso" description={query ? "Cambia el término de búsqueda para consultar otros pasajeros." : "Los pasajeros de Wialon aparecerán aquí."} /> : null}

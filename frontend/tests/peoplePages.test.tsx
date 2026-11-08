@@ -61,11 +61,15 @@ describe("listados de personas Wialon", () => {
     await user.type(screen.getByRole("textbox", { name: "Buscar conductor" }), "Ana");
     await user.click(screen.getByRole("button", { name: "Buscar" }));
     await waitFor(() => expect(getApi).toHaveBeenCalledWith("/drivers", {
-      params: { resource_id: 20, q: "Ana", offset: 0, limit: 20 },
+      params: { resource_id: 20, q: "Ana", offset: 0, limit: 20, sort_by: "name", sort_order: "asc" },
     }));
     await user.click(screen.getByRole("button", { name: "Siguiente" }));
     await waitFor(() => expect(getApi).toHaveBeenCalledWith("/drivers", {
-      params: { resource_id: 20, q: "Ana", offset: 20, limit: 20 },
+      params: { resource_id: 20, q: "Ana", offset: 20, limit: 20, sort_by: "name", sort_order: "asc" },
+    }));
+    await user.selectOptions(screen.getByRole("combobox", { name: "Ordenar por" }), "code:asc");
+    await waitFor(() => expect(getApi).toHaveBeenCalledWith("/drivers", {
+      params: { resource_id: 20, q: "Ana", offset: 0, limit: 20, sort_by: "code", sort_order: "asc" },
     }));
   });
 
@@ -93,7 +97,7 @@ describe("listados de personas Wialon", () => {
     await user.selectOptions(await screen.findByRole("combobox", { name: "Recurso Wialon" }), "21");
 
     await waitFor(() => expect(getApi).toHaveBeenCalledWith("/passengers", {
-      params: { resource_id: 21, offset: 0, limit: 20 },
+      params: { resource_id: 21, offset: 0, limit: 20, sort_by: "name", sort_order: "asc" },
     }));
   });
 

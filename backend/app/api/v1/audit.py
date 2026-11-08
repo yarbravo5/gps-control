@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -15,6 +17,8 @@ router = APIRouter(prefix="/audit", tags=["audit"])
 def list_audit_logs(
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=200),
+    sort_by: Literal["created_at", "action", "entity"] = Query(default="created_at"),
+    sort_order: Literal["asc", "desc"] = Query(default="desc"),
     _current_user: User = Depends(require_permission("audit:view")),
     database_session: Session = Depends(get_database_session),
 ):
@@ -22,4 +26,6 @@ def list_audit_logs(
         database_session,
         offset=offset,
         limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )

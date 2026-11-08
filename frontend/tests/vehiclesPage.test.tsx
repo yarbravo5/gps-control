@@ -136,12 +136,12 @@ describe("VehiclesPage", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "moving");
 
     await waitFor(() => expect(getVehicles).toHaveBeenCalledWith("/vehicles", {
-      params: { q: "Camión", status: "moving", offset: 0, limit: 20 },
+      params: { q: "Camión", status: "moving", offset: 0, limit: 20, sort_order: "asc" },
     }));
     await user.click(screen.getByRole("button", { name: "Siguiente" }));
 
     await waitFor(() => expect(getVehicles).toHaveBeenCalledWith("/vehicles", {
-      params: { q: "Camión", status: "moving", offset: 20, limit: 20 },
+      params: { q: "Camión", status: "moving", offset: 20, limit: 20, sort_order: "asc" },
     }));
   });
 
