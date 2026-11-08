@@ -33,4 +33,26 @@ describe("normalizeApiError", () => {
 
     expect(normalizeApiError(axiosLikeError).kind).toBe("timeout");
   });
+
+  it("explains fields rejected by FastAPI validation without echoing submitted values", () => {
+    const axiosLikeError = Object.assign(new Error("Unprocessable entity"), {
+      isAxiosError: true,
+      response: {
+        status: 422,
+        data: {
+          detail: [
+            { loc: ["body", "password"], msg: "Value error, La contraseña debe incluir al menos un número." },
+            { loc: ["body", "role"], msg: "Input should be 'admin', 'operator' or 'viewer'" },
+          ],
+        },
+      },
+    });
+
+    const result = normalizeApiError(axiosLikeError);
+
+    expect(result.status).toBe(422);
+    expect(result.message).toContain("Contraseña temporal: La contraseña debe incluir al menos un número.");
+    expect(result.message).toContain("Rol: selecciona un rol válido.");
+    expect(result.message).not.toContain("Unprocessable entity");
+  });
 });

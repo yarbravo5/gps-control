@@ -13,6 +13,40 @@ export class ApiError extends Error {
   }
 }
 
+const VALIDATION_FIELDS: Record<string, string> = {
+  email: "Correo electrónico",
+  name: "Nombre",
+  password: "Contraseña temporal",
+  new_password: "Nueva contraseña",
+  role: "Rol",
+};
+
+function describeValidationErrors(data: unknown): string | null {
+  if (!data || typeof data !== "object" || !("detail" in data) || !Array.isArray(data.detail)) return null;
+
+  const issues = data.detail.flatMap((issue: unknown) => {
+    if (!issue || typeof issue !== "object") return [];
+    const entry = issue as { loc?: unknown[]; msg?: unknown };
+    if (typeof entry.msg !== "string") return [];
+
+    const fieldName = entry.loc?.at(-1);
+    const field = typeof fieldName === "string" ? VALIDATION_FIELDS[fieldName] : undefined;
+    const rawMessage = entry.msg.replace(/^Value error,\s*/i, "");
+    let message = "no cumple el formato requerido.";
+    if (/field required/i.test(rawMessage)) message = "es obligatorio.";
+    else if (/email/i.test(rawMessage)) message = "ingresa un correo válido.";
+    else if (/at least 8 characters/i.test(rawMessage)) message = "debe tener al menos 8 caracteres.";
+    else if (/at most 128 characters/i.test(rawMessage)) message = "no puede superar 128 caracteres.";
+    else if (/contraseñ/i.test(rawMessage)) message = rawMessage;
+    else if (/nombre/i.test(rawMessage)) message = rawMessage;
+    else if (/role|admin.*operator.*viewer/i.test(rawMessage)) message = "selecciona un rol válido.";
+
+    return [field ? `${field}: ${message}` : message];
+  });
+
+  return issues.length ? `Revisa los datos ingresados. ${issues.join(" ")}` : null;
+}
+
 const STATUS_MESSAGES: Record<number, string> = {
   400: "No pudimos procesar la solicitud. Revisa la información e inténtalo de nuevo.",
   401: "Tu sesión no está disponible. Inicia sesión nuevamente.",
@@ -35,6 +69,13 @@ export function normalizeApiError(error: unknown): ApiError {
 
     const status = error.response?.status;
     if (status !== undefined) {
+      if (status === 422) {
+        return new ApiError(
+          describeValidationErrors(error.response?.data) ?? "Revisa los datos ingresados e inténtalo de nuevo.",
+          "http",
+          status,
+        );
+      }
       return new ApiError(
         STATUS_MESSAGES[status] ?? "No pudimos completar la solicitud. Inténtalo nuevamente.",
         "http",

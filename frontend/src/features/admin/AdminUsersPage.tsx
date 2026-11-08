@@ -28,6 +28,7 @@ export function AdminUsersPage() {
   const [role, setRole] = useState<AdminRole>("viewer");
   const [isActive, setIsActive] = useState(true);
   const [success, setSuccess] = useState("");
+  const [formValidationError, setFormValidationError] = useState("");
   const usersQuery = useQuery({
     queryKey: ["managed-users", offset],
     queryFn: () => listUsers(offset, PAGE_SIZE),
@@ -61,6 +62,7 @@ export function AdminUsersPage() {
     setRole("viewer");
     setIsActive(true);
     setSuccess("");
+    setFormValidationError("");
     setMode("create");
   };
 
@@ -82,11 +84,26 @@ export function AdminUsersPage() {
 
   const submitForm = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setFormValidationError("");
     if (mode === "create") {
+      if (!name.trim()) {
+        setFormValidationError("Escribe el nombre del usuario.");
+        return;
+      }
+      const passwordError = validateTemporaryPassword(password);
+      if (passwordError) {
+        setFormValidationError(passwordError);
+        return;
+      }
       createMutation.mutate({ name: name.trim(), email: email.trim(), password, role });
     } else if (mode === "edit" && selectedUser) {
       updateMutation.mutate({ userId: selectedUser.id, payload: { name: name.trim(), role, is_active: isActive } });
     } else if (mode === "reset" && selectedUser) {
+      const passwordError = validateTemporaryPassword(password);
+      if (passwordError) {
+        setFormValidationError(passwordError);
+        return;
+      }
       resetMutation.mutate({ userId: selectedUser.id, newPassword: password });
     }
   };
@@ -112,8 +129,9 @@ export function AdminUsersPage() {
               <option value="admin">Administrador</option><option value="operator">Operador</option><option value="viewer">Visualizador</option>
             </select>
           </div>
-          {mode === "create" ? <TextField autoComplete="new-password" hint="El usuario deberá cambiarla al iniciar sesión por primera vez." label="Contraseña temporal" maxLength={128} minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} /> : <label className="flex min-h-11 items-center gap-3 text-sm text-slate-800"><input checked={isActive} onChange={(event) => setIsActive(event.target.checked)} type="checkbox" />Cuenta activa</label>}
-        </> : <TextField autoComplete="new-password" label="Nueva contraseña temporal" maxLength={128} minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />}
+          {mode === "create" ? <TextField autoComplete="new-password" hint="Mínimo 8 caracteres, con una letra y un número. El usuario deberá cambiarla al iniciar sesión." label="Contraseña temporal" maxLength={128} minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} /> : <label className="flex min-h-11 items-center gap-3 text-sm text-slate-800"><input checked={isActive} onChange={(event) => setIsActive(event.target.checked)} type="checkbox" />Cuenta activa</label>}
+        </> : <TextField autoComplete="new-password" hint="Mínimo 8 caracteres, con una letra y un número." label="Nueva contraseña temporal" maxLength={128} minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />}
+        {formValidationError ? <p className="text-sm text-wine-dark" role="alert">{formValidationError}</p> : null}
         {mutationError ? <p className="text-sm text-wine-dark" role="alert">{mutationError instanceof ApiError ? mutationError.message : "No se pudo completar la operación."}</p> : null}
         <div className="flex flex-wrap gap-2">
           <button className="button-primary min-h-11 rounded-control px-4 text-sm font-semibold disabled:opacity-50" disabled={mutationPending} type="submit">{mutationPending ? "Guardando…" : mode === "reset" ? "Restablecer" : "Guardar"}</button>
@@ -149,4 +167,11 @@ export function AdminUsersPage() {
 
 function UserDetail({ label, value }: { label: string; value: string }) {
   return <dl className="m-0 grid gap-1 text-sm"><dt className="text-xs font-medium text-muted">{label}</dt><dd className="m-0 text-slate-800">{value}</dd></dl>;
+}
+
+function validateTemporaryPassword(password: string): string | null {
+  if (password.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
+  if (!/\p{L}/u.test(password)) return "La contraseña debe incluir al menos una letra.";
+  if (!/\p{N}/u.test(password)) return "La contraseña debe incluir al menos un número.";
+  return null;
 }

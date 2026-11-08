@@ -60,6 +60,22 @@ describe("páginas de administración", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Debe cambiar la contraseña");
   });
 
+  it("valida la contraseña antes de enviar y conserva el rol seleccionado", async () => {
+    const user = userEvent.setup();
+    getApi.mockResolvedValue({ data: [] } as never);
+    renderPage(<AdminUsersPage />);
+
+    await user.click(await screen.findByRole("button", { name: "Crear usuario" }));
+    await user.type(screen.getByRole("textbox", { name: "Nombre" }), "Operador Dos");
+    await user.type(screen.getByRole("textbox", { name: "Correo electrónico" }), "operator2@example.com");
+    await user.type(screen.getByLabelText("Contraseña temporal"), "WeakPass");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Rol" }), "operator");
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("debe incluir al menos un número");
+    expect(postApi).not.toHaveBeenCalled();
+  });
+
   it("restablece la contraseña con el endpoint administrativo", async () => {
     const user = userEvent.setup();
     getApi.mockResolvedValue({ data: [managedUser] } as never);
