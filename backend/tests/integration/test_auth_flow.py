@@ -70,6 +70,62 @@ def test_operator_cannot_manage_users_or_escalate_role(client: TestClient) -> No
     assert escalation_response.status_code == 403
 
 
+def test_role_changes_apply_to_an_existing_access_token(client: TestClient) -> None:
+    admin_login = login(client, ADMIN_EMAIL, ADMIN_PASSWORD)
+    admin_headers = {"Authorization": f"Bearer {admin_login['access_token']}"}
+    create_response = client.post(
+        "/api/v1/users",
+        headers=admin_headers,
+        json={
+            "email": "role-change@gpscontrol.com",
+            "name": "Usuario de prueba",
+            "password": "RoleChange123!Password",
+            "role": "viewer",
+        },
+    )
+    assert create_response.status_code == 201
+
+    first_login = login(
+        client,
+        "role-change@gpscontrol.com",
+        "RoleChange123!Password",
+    )
+    user_headers = {"Authorization": f"Bearer {first_login['access_token']}"}
+    assert client.get("/api/v1/users", headers=user_headers).status_code == 403
+
+    password_change = client.post(
+        "/api/v1/auth/change-password",
+        headers=user_headers,
+        json={
+            "current_password": "RoleChange123!Password",
+            "new_password": "RoleChange456!Password",
+        },
+    )
+    assert password_change.status_code == 204
+    renewed_login = login(
+        client,
+        "role-change@gpscontrol.com",
+        "RoleChange456!Password",
+    )
+    user_headers = {"Authorization": f"Bearer {renewed_login['access_token']}"}
+
+    promoted = client.patch(
+        f"/api/v1/users/{create_response.json()['id']}",
+        headers=admin_headers,
+        json={"role": "admin"},
+    )
+    assert promoted.status_code == 200
+    assert client.get("/api/v1/users", headers=user_headers).status_code == 200
+
+    demoted = client.patch(
+        f"/api/v1/users/{create_response.json()['id']}",
+        headers=admin_headers,
+        json={"role": "viewer"},
+    )
+    assert demoted.status_code == 200
+    assert client.get("/api/v1/users", headers=user_headers).status_code == 403
+
+
 def test_viewer_cannot_write_by_changing_resource_and_entity_ids(
     client: TestClient,
 ) -> None:

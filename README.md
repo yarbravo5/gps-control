@@ -68,7 +68,7 @@ Roles disponibles:
 - No hay rate limiting global; el login tiene bloqueo temporal por intentos fallidos.
 - El backend limita el historial a siete días y 5.000 puntos por consulta; rangos mayores deben dividirse.
 - La auditoría registra mutaciones de vehículos, conductores, pasajeros y administración, además de fallos de login; su consulta es exclusiva del Admin.
-- El dashboard consulta métricas actuales al cargar o volver a enfocarse, pero no muestra una hora de actualización ni incluye un mapa propio. La ubicación y actualización periódica están en el módulo de vehículos.
+- El dashboard incluye la hora UTC de consulta presentada en hora de Bogotá y actualiza sus métricas cada 30 segundos mientras la pestaña está visible. El mapa y la actualización de posiciones están en el módulo de vehículos.
 
 ## Stack
 

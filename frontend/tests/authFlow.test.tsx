@@ -10,6 +10,7 @@ const api = vi.hoisted(() => ({ loginRequest: vi.fn(), refreshRequest: vi.fn(), 
 vi.mock("../src/features/auth/authApi", () => api);
 vi.mock("../src/features/dashboard/dashboardApi", () => ({
   getFleetDashboard: vi.fn().mockResolvedValue({
+    generated_at: "2026-11-07T12:00:00Z",
     total_vehicles: 1,
     moving_vehicles: 1,
     stopped_vehicles: 0,

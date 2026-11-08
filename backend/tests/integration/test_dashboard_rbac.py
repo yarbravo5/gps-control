@@ -37,6 +37,7 @@ def test_dashboard_is_available_to_all_read_roles(client: TestClient):
             )
             assert response.status_code == 200
             assert response.json()["total_vehicles"] == 0
+            assert response.json()["generated_at"].endswith("Z") or "+00:00" in response.json()["generated_at"]
     finally:
         client.app.dependency_overrides.pop(get_wialon_gateway, None)
 
