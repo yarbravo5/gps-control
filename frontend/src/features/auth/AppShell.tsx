@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { PointerEvent } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
@@ -18,6 +18,15 @@ export function AppShell() {
     navigate("/login", { replace: true });
   };
   const visibleItems = navigationItems.filter((item) => hasPermission(item.permission));
+
+  useEffect(() => {
+    if (!mobileNavigationOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileNavigationOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [mobileNavigationOpen]);
 
   const updatePointerGlow = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType && event.pointerType !== "mouse") return;
@@ -54,8 +63,9 @@ export function AppShell() {
       </div>
     </header>
 
-    <div className="mx-auto flex max-w-[1600px] flex-col md:flex-row">
-      <aside className={`${mobileNavigationOpen ? "block" : "hidden"} app-sidebar md:block`} id="app-navigation">
+    {mobileNavigationOpen ? <div aria-hidden="true" className="app-navigation-backdrop lg:hidden" onClick={() => setMobileNavigationOpen(false)} /> : null}
+    <div className="mx-auto flex max-w-[1600px] flex-col lg:flex-row">
+      <aside className={`${mobileNavigationOpen ? "app-sidebar--mobile-open" : "hidden"} app-sidebar lg:block`} id="app-navigation">
         <div className="mb-5 border-b border-slate-200 px-4 pb-4 sm:hidden"><p className="font-semibold text-slate-900">{user?.name}</p><p className="mt-1 text-sm text-muted">{user ? roleLabels[user.role] : ""}</p></div>
         <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted">Menú principal</p>
         <nav aria-label="Secciones de la aplicación" className="grid gap-1">

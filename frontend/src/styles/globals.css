@@ -705,13 +705,13 @@ summary::-webkit-details-marker {
   background: #eee8f2;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .mobile-nav-toggle {
     display: none;
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .app-sidebar {
     position: static;
     width: 100%;
@@ -3390,6 +3390,40 @@ summary::-webkit-details-marker {
 .app-shell .app-sidebar {
   border-color: rgb(117 19 36 / 10%);
   background: linear-gradient(155deg, rgb(255 255 255 / 92%), rgb(255 255 255 / 78%) 70%, rgb(238 232 242 / 80%));
+}
+
+@media (max-width: 1023px) {
+  .app-shell .app-navigation-backdrop {
+    position: fixed;
+    z-index: 40;
+    inset: 4.25rem 0 0;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background: rgb(23 21 26 / 24%);
+    box-shadow: none;
+    cursor: default;
+  }
+
+  .app-shell .app-navigation-backdrop::after {
+    content: none;
+  }
+
+  .app-shell .app-sidebar--mobile-open {
+    position: fixed;
+    z-index: 50;
+    top: 4.75rem;
+    left: max(0.5rem, calc((100vw - 1600px) / 2 + 0.5rem));
+    width: min(20rem, calc(100vw - 1rem));
+    height: auto;
+    max-height: calc(100dvh - 5.5rem);
+    flex: initial;
+    overflow-y: auto;
+    border: 1px solid rgb(117 19 36 / 14%);
+    border-radius: 1rem;
+    padding: 1rem 0.8rem;
+    box-shadow: 0 18px 48px rgb(23 21 26 / 18%);
+  }
 }
 
 .app-menu-icon,
