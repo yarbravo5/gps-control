@@ -10,6 +10,13 @@ class VehicleStatus(StrEnum):
 
 
 @dataclass(frozen=True)
+class VehicleCustomFieldDTO:
+    id: int
+    name: str
+    value: str
+
+
+@dataclass(frozen=True)
 class VehicleDTO:
     id: int
     name: str
@@ -20,6 +27,7 @@ class VehicleDTO:
     direction: str | None
     last_communication: datetime | None
     status: VehicleStatus
+    custom_fields: tuple[VehicleCustomFieldDTO, ...] = ()
 
 
 @dataclass(frozen=True)

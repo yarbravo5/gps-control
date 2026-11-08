@@ -28,8 +28,8 @@ from app.gateways.wialon.session import WialonSession
 class WialonClient:
     """Synchronous Wialon HTTP adapter with an in-memory, refreshed session."""
 
-    # 1: base unit fields; 1024: last message and last known location.
-    UNIT_FLAGS = 1025
+    # 1: base unit fields; 8: custom fields; 1024: last message and last known location.
+    UNIT_FLAGS = 1033
     RESOURCE_BASE_FLAGS = 1
     RESOURCE_DRIVER_FLAGS = RESOURCE_BASE_FLAGS + 256
     RESOURCE_PASSENGER_FLAGS = RESOURCE_BASE_FLAGS + 2_097_152
@@ -145,6 +145,25 @@ class WialonClient:
                 "El servicio de telemetría devolvió una unidad en formato inválido."
             )
         return unit_from_wialon(item)
+
+    def update_unit_custom_field(
+        self,
+        unit_id: int,
+        *,
+        field_id: int,
+        call_mode: str,
+        name: str | None = None,
+        value: str | None = None,
+    ) -> None:
+        params: dict[str, Any] = {
+            "itemId": unit_id,
+            "id": field_id,
+            "callMode": call_mode,
+        }
+        if call_mode in {"create", "update"}:
+            params["n"] = name or ""
+            params["v"] = value or ""
+        self._request("item/update_custom_field", params)
 
     def search_resources(self, offset: int, limit: int) -> WialonResourceSearchResult:
         body = self._request(

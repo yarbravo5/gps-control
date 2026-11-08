@@ -12,11 +12,20 @@ class WialonPosition:
 
 
 @dataclass(frozen=True)
+class WialonCustomField:
+    id: int
+    name: str
+    value: str
+
+
+@dataclass(frozen=True)
 class WialonUnit:
     id: int
     name: str
     position: WialonPosition | None
     last_message_timestamp: int | None = None
+    custom_fields: tuple[WialonCustomField, ...] = ()
+    available_fields: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -152,6 +161,28 @@ def _text(value: Any) -> str:
     return value if isinstance(value, str) else ""
 
 
+def _unit_custom_fields(value: Any) -> tuple[WialonCustomField, ...]:
+    if not isinstance(value, list):
+        return ()
+    fields = []
+    for raw in value:
+        if not isinstance(raw, dict):
+            continue
+        field_id = _optional_int(raw.get("id"))
+        name = raw.get("n")
+        if field_id is None or not isinstance(name, str) or not name:
+            continue
+        raw_value = raw.get("v")
+        if isinstance(raw_value, str):
+            value = raw_value
+        elif isinstance(raw_value, (int, float)) and not isinstance(raw_value, bool):
+            value = str(raw_value)
+        else:
+            value = ""
+        fields.append(WialonCustomField(id=field_id, name=name, value=value))
+    return tuple(fields)
+
+
 def _custom_fields(value: Any) -> dict[str, str]:
     if not isinstance(value, dict):
         return {}
@@ -270,4 +301,6 @@ def unit_from_wialon(payload: dict[str, Any]) -> WialonUnit | None:
         name=name,
         position=position,
         last_message_timestamp=last_message_timestamp,
+        custom_fields=_unit_custom_fields(payload.get("flds")),
+        available_fields=frozenset(payload.keys()),
     )

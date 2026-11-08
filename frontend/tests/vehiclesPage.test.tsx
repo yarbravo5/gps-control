@@ -10,7 +10,7 @@ import { listAllVehicles } from "../src/features/vehicles/vehiclesApi";
 import type { Vehicle, VehiclePage } from "../src/features/vehicles/vehiclesApi";
 
 vi.mock("../src/services/api/httpClient", () => ({
-  httpClient: { get: vi.fn() },
+  httpClient: { get: vi.fn(), patch: vi.fn() },
 }));
 
 const authMock = vi.hoisted(() => ({ permissions: [] as string[] }));
@@ -44,6 +44,7 @@ vi.mock("../src/features/vehicles/FleetMap", () => ({
 }));
 
 const getVehicles = vi.mocked(httpClient.get);
+const patchVehicle = vi.mocked(httpClient.patch);
 
 function renderPage() {
   const queryClient = new QueryClient({
@@ -66,10 +67,15 @@ const sampleVehicle = {
   direction: "E",
   last_communication: "2026-11-07T12:00:00Z",
   status: "moving" as const,
+  custom_fields: [],
 };
 
 describe("VehiclesPage", () => {
-  beforeEach(() => getVehicles.mockReset());
+  beforeEach(() => {
+    getVehicles.mockReset();
+    patchVehicle.mockReset();
+    authMock.permissions = [];
+  });
 
   it("pausa el polling en segundo plano y refresca cada 30 segundos visible", () => {
     expect(getVehiclePollingInterval("visible")).toBe(30_000);
@@ -230,5 +236,72 @@ describe("VehiclesPage", () => {
 
     expect(await screen.findByText("Pasajeros asignados")).toBeVisible();
     expect(screen.getByText("Luis · P9")).toBeVisible();
+  });
+
+  it("lista y guarda cambios de campos personalizados del vehículo", async () => {
+    const user = userEvent.setup();
+    authMock.permissions = ["vehicles:custom_fields:write"];
+    const detail = {
+      ...sampleVehicle,
+      drivers: [],
+      passengers: [],
+      custom_fields: [
+        { id: 5, name: "Placa", value: "ABC123" },
+        { id: 6, name: "Odometro", value: "1200" },
+      ],
+    };
+    getVehicles.mockImplementation((url) => Promise.resolve({
+      data: url === "/vehicles" ? page([sampleVehicle]) : detail,
+    }) as never);
+    patchVehicle.mockResolvedValue({ data: detail } as never);
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Ubicar" }));
+    const plateValue = await screen.findByRole("textbox", { name: "Valor de Placa" });
+    await user.clear(plateValue);
+    await user.type(plateValue, "XYZ");
+    await user.click(screen.getByRole("button", { name: "Eliminar campo Odometro" }));
+    await user.type(screen.getByRole("textbox", { name: "Nuevo campo" }), "Color");
+    await user.type(screen.getByRole("textbox", { name: "Valor" }), "Rojo");
+    await user.click(screen.getByRole("button", { name: "Agregar" }));
+    await user.click(screen.getByRole("button", { name: "Guardar campos" }));
+
+    await waitFor(() => expect(patchVehicle).toHaveBeenCalledWith("/vehicles/17/custom-fields", {
+      fields: [
+        { id: 5, name: "Placa", value: "XYZ" },
+        { name: "Color", value: "Rojo" },
+      ],
+      remove_field_ids: [6],
+    }));
+    expect(await screen.findByText("Campos personalizados actualizados.")).toBeVisible();
+  });
+
+  it("muestra el error y permite reintentar al guardar campos personalizados", async () => {
+    const user = userEvent.setup();
+    authMock.permissions = ["vehicles:custom_fields:write"];
+    const detail = {
+      ...sampleVehicle,
+      drivers: [],
+      passengers: [],
+      custom_fields: [{ id: 5, name: "Placa", value: "ABC123" }],
+    };
+    getVehicles.mockImplementation((url) => Promise.resolve({
+      data: url === "/vehicles" ? page([sampleVehicle]) : detail,
+    }) as never);
+    patchVehicle.mockRejectedValueOnce(new ApiError("No fue posible guardar los campos.", "network"));
+    patchVehicle.mockResolvedValueOnce({ data: detail } as never);
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Ubicar" }));
+    const plateValue = await screen.findByRole("textbox", { name: "Valor de Placa" });
+    await user.clear(plateValue);
+    await user.type(plateValue, "XYZ");
+    await user.click(screen.getByRole("button", { name: "Guardar campos" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("No fue posible guardar los campos.");
+    await user.click(screen.getByRole("button", { name: "Reintentar" }));
+
+    await waitFor(() => expect(patchVehicle).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Campos personalizados actualizados.")).toBeVisible();
   });
 });

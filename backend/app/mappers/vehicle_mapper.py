@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from app.dto.vehicle import VehicleDTO, VehicleStatus
+from app.dto.vehicle import VehicleCustomFieldDTO, VehicleDTO, VehicleStatus
 from app.gateways.wialon.dto import WialonUnit
 
 
@@ -75,4 +75,8 @@ def map_vehicle(
         direction=heading_to_direction(heading),
         last_communication=timestamp,
         status=status,
+        custom_fields=tuple(
+            VehicleCustomFieldDTO(id=field.id, name=field.name, value=field.value)
+            for field in unit.custom_fields
+        ),
     )

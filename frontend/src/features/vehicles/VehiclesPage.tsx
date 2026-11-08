@@ -9,6 +9,7 @@ import { TextField } from "../../components/ui/TextField";
 import { ApiError } from "../../services/api/apiError";
 import { useAuth } from "../auth/AuthProvider";
 import { ExportCsvButton } from "../foundation/ExportCsvButton";
+import { VehicleCustomFields } from "./VehicleCustomFields";
 import { getVehicle, listAllVehicles, listVehicles } from "./vehiclesApi";
 import type { Vehicle, VehicleDetail, VehicleStatus } from "./vehiclesApi";
 
@@ -44,6 +45,7 @@ const bogotaDate = new Intl.DateTimeFormat("es-CO", {
 export function VehiclesPage() {
   const { hasPermission } = useAuth();
   const canExport = hasPermission("export:csv");
+  const canEditCustomFields = hasPermission("vehicles:custom_fields:write");
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<VehicleStatus | "">("");
@@ -151,9 +153,11 @@ export function VehiclesPage() {
         ) : null}
         {selectedVehicleId !== null ? (
           <SelectedVehicle
+            canEditCustomFields={canEditCustomFields}
             detail={detailQuery.data}
             error={detailQuery.isError}
             isLoading={detailQuery.isPending}
+            onCustomFieldsSaved={() => void detailQuery.refetch()}
             onRetry={() => void detailQuery.refetch()}
             vehicle={fleet.find((vehicle) => vehicle.id === selectedVehicleId) ?? null}
           />
@@ -247,13 +251,17 @@ function SelectedVehicle({
   detail,
   error,
   isLoading,
+  canEditCustomFields,
   onRetry,
+  onCustomFieldsSaved,
 }: {
   vehicle: Vehicle | null;
   detail: VehicleDetail | undefined;
   error: boolean;
   isLoading: boolean;
+  canEditCustomFields: boolean;
   onRetry: () => void;
+  onCustomFieldsSaved: () => void;
 }) {
   if (!vehicle) {
     return <p className="self-center px-2 text-sm text-muted">El vehículo seleccionado ya no aparece en los resultados actuales.</p>;
@@ -287,6 +295,23 @@ function SelectedVehicle({
         {detail.passengers.map((passenger) => <p className="m-0 text-muted" key={passenger.id}>{passenger.name}{passenger.code ? ` · ${passenger.code}` : ""}</p>)}
       </div> : null}
       {detail && detail.passengers.length === 0 ? <p className="text-sm text-muted">No hay pasajeros vinculados a este vehículo.</p> : null}
+      {detail && canEditCustomFields ? (
+        <VehicleCustomFields
+          fields={detail.custom_fields}
+          onSaved={onCustomFieldsSaved}
+          vehicleId={detail.id}
+        />
+      ) : null}
+      {detail && !canEditCustomFields ? (
+        <div className="grid gap-1 border-t border-slate-200 pt-4 text-sm">
+          <h3 className="font-semibold text-slate-900">Campos personalizados</h3>
+          {detail.custom_fields.length > 0
+            ? detail.custom_fields.map((field) => (
+              <p className="m-0 text-muted" key={field.id}>{field.name}: {field.value}</p>
+            ))
+            : <p className="m-0 text-muted">Este vehículo no tiene campos personalizados.</p>}
+        </div>
+      ) : null}
     </aside>
   );
 }

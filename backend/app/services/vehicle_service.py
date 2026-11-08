@@ -27,6 +27,31 @@ class VehicleGateway(Protocol):
     def search_item(self, unit_id: int) -> WialonUnit | None: ...
     def get_unit_drivers_for_all_resources(self, unit_id: int) -> list[WialonUnitDriver]: ...
     def search_resources(self, offset: int, limit: int) -> WialonResourceSearchResult: ...
+    def update_unit_custom_field(
+        self,
+        unit_id: int,
+        *,
+        field_id: int,
+        call_mode: str,
+        name: str | None = None,
+        value: str | None = None,
+    ) -> None: ...
+
+
+class VehicleNotFoundError(Exception):
+    pass
+
+
+class CustomFieldNotFoundError(Exception):
+    pass
+
+
+class CustomFieldConflictError(Exception):
+    pass
+
+
+class UnsafeCustomFieldUpdateError(Exception):
+    pass
 
 
 def list_vehicles(
@@ -127,3 +152,64 @@ def get_vehicle_detail(
             break
         offset += len(resource_page.items)
     return VehicleDetailDTO(vehicle=vehicle, drivers=drivers, passengers=passengers)
+
+
+def update_vehicle_custom_fields(
+    gateway: VehicleGateway,
+    *,
+    vehicle_id: int,
+    fields: list[dict[str, object]],
+    remove_field_ids: list[int],
+) -> VehicleDetailDTO:
+    unit = gateway.search_item(vehicle_id)
+    if unit is None:
+        raise VehicleNotFoundError("Vehículo no encontrado.")
+    if "flds" not in unit.available_fields:
+        raise UnsafeCustomFieldUpdateError(
+            "Wialon no devolvió los campos personalizados actuales del vehículo."
+        )
+
+    existing = {field.id: field for field in unit.custom_fields}
+    remove_set = set(remove_field_ids)
+    update_ids = {
+        field_id
+        for field in fields
+        if (field_id := field.get("id")) is not None and field_id != 0
+    }
+    missing = (remove_set | update_ids) - set(existing)
+    if missing:
+        raise CustomFieldNotFoundError(
+            "Uno de los campos personalizados ya no existe en Wialon."
+        )
+
+    reserved_names = {
+        field.name.casefold()
+        for field in existing.values()
+        if field.id not in update_ids and field.id not in remove_set
+    }
+    for field in fields:
+        name = str(field["name"]).strip()
+        if name.casefold() in reserved_names:
+            raise CustomFieldConflictError(
+                "Ya existe un campo personalizado con ese nombre en el vehículo."
+            )
+        reserved_names.add(name.casefold())
+
+    for field_id in remove_set:
+        gateway.update_unit_custom_field(
+            vehicle_id, field_id=field_id, call_mode="delete"
+        )
+    for field in fields:
+        field_id = field.get("id")
+        gateway.update_unit_custom_field(
+            vehicle_id,
+            field_id=field_id if isinstance(field_id, int) and field_id > 0 else 0,
+            call_mode="update" if field_id else "create",
+            name=str(field["name"]).strip(),
+            value=str(field["value"]),
+        )
+
+    detail = get_vehicle_detail(gateway, vehicle_id=vehicle_id)
+    if detail is None:
+        raise VehicleNotFoundError("Vehículo no encontrado.")
+    return detail

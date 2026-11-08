@@ -9,6 +9,7 @@ from app.gateways.wialon.exceptions import WialonIntegrationError
 from app.models import User
 from app.schemas.history import VehicleHistoryQuery, VehicleHistoryResponse
 from app.schemas.vehicle import (
+    VehicleCustomFieldsUpdate,
     VehicleDetailResponse,
     VehicleListResponse,
     VehicleResponse,
@@ -91,6 +92,38 @@ def get_vehicle_history(
         ) from exc
 
 
+@router.patch("/{vehicle_id}/custom-fields", response_model=VehicleDetailResponse)
+def update_vehicle_custom_fields(
+    payload: VehicleCustomFieldsUpdate,
+    vehicle_id: int = Path(gt=0),
+    _current_user: User = Depends(require_permission("vehicles:custom_fields:write")),
+    gateway: WialonClient = Depends(get_wialon_gateway),
+) -> VehicleDetailResponse:
+    try:
+        detail = vehicle_service.update_vehicle_custom_fields(
+            gateway,
+            vehicle_id=vehicle_id,
+            fields=[field.model_dump() for field in payload.fields],
+            remove_field_ids=payload.remove_field_ids,
+        )
+        return _detail_response(detail)
+    except (
+        vehicle_service.VehicleNotFoundError,
+        vehicle_service.CustomFieldNotFoundError,
+    ) as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (
+        vehicle_service.CustomFieldConflictError,
+        vehicle_service.UnsafeCustomFieldUpdateError,
+    ) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except WialonIntegrationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="No fue posible actualizar los campos personalizados del vehículo.",
+        ) from exc
+
+
 @router.get("/{vehicle_id}", response_model=VehicleDetailResponse)
 def get_vehicle(
     vehicle_id: int = Path(gt=0),
@@ -101,13 +134,17 @@ def get_vehicle(
         detail = vehicle_service.get_vehicle_detail(gateway, vehicle_id=vehicle_id)
         if detail is None:
             raise HTTPException(status_code=404, detail="Vehículo no encontrado.")
-        return VehicleDetailResponse.model_validate({
-            **detail.vehicle.__dict__,
-            "drivers": [driver.__dict__ for driver in detail.drivers],
-            "passengers": [passenger.__dict__ for passenger in detail.passengers],
-        })
+        return _detail_response(detail)
     except WialonIntegrationError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="No fue posible consultar el detalle del vehículo.",
         ) from exc
+
+
+def _detail_response(detail: vehicle_service.VehicleDetailDTO) -> VehicleDetailResponse:
+    return VehicleDetailResponse.model_validate({
+        **detail.vehicle.__dict__,
+        "drivers": [driver.__dict__ for driver in detail.drivers],
+        "passengers": [passenger.__dict__ for passenger in detail.passengers],
+    })

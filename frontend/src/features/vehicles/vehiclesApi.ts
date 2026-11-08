@@ -2,6 +2,12 @@ import { httpClient } from "../../services/api/httpClient";
 
 export type VehicleStatus = "moving" | "stopped" | "no_signal";
 
+export interface VehicleCustomField {
+  id: number;
+  name: string;
+  value: string;
+}
+
 export interface Vehicle {
   id: number;
   name: string;
@@ -12,6 +18,18 @@ export interface Vehicle {
   direction: string | null;
   last_communication: string | null;
   status: VehicleStatus;
+  custom_fields: VehicleCustomField[];
+}
+
+export interface VehicleCustomFieldInput {
+  id?: number | null;
+  name: string;
+  value: string;
+}
+
+export interface VehicleCustomFieldsUpdatePayload {
+  fields: VehicleCustomFieldInput[];
+  remove_field_ids?: number[];
 }
 
 export interface VehicleDriver {
@@ -78,5 +96,16 @@ export async function listAllVehicles(
 
 export async function getVehicle(vehicleId: number): Promise<VehicleDetail> {
   const response = await httpClient.get<VehicleDetail>(`/vehicles/${vehicleId}`);
+  return response.data;
+}
+
+export async function updateVehicleCustomFields(
+  vehicleId: number,
+  payload: VehicleCustomFieldsUpdatePayload,
+): Promise<VehicleDetail> {
+  const response = await httpClient.patch<VehicleDetail>(
+    `/vehicles/${vehicleId}/custom-fields`,
+    payload,
+  );
   return response.data;
 }

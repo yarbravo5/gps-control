@@ -46,7 +46,7 @@ def test_login_then_search_uses_session_and_maps_units() -> None:
                 "sortType": "sys_name",
             },
             "force": 1,
-            "flags": 1025,
+            "flags": 1033,
             "from": 0,
             "to": 9,
         }
@@ -142,6 +142,56 @@ def test_connection_error_is_sanitized() -> None:
     with pytest.raises(WialonConnectionError) as raised:
         client.search_items(None, 0, 10)
     assert "private network details" not in str(raised.value)
+
+
+def test_unit_custom_fields_are_parsed_and_updated_through_wialon() -> None:
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        data = form(request)
+        if data["svc"] == "token/login":
+            return httpx.Response(200, json={"eid": "mock-session"})
+        params = json.loads(data["params"])
+        calls.append((data["svc"], params))
+        if data["svc"] == "core/search_item":
+            return httpx.Response(200, json={"item": {
+                "id": 42,
+                "nm": "Truck",
+                "flds": [
+                    {"id": 5, "n": "Placa", "v": "ABC123"},
+                    {"id": 6, "n": "Odometro", "v": 1200},
+                    {"id": "invalid", "n": "Ignorado", "v": "x"},
+                ],
+            }})
+        return httpx.Response(200, json={})
+
+    client = make_client(handler)
+    unit = client.search_item(42)
+    assert unit is not None
+    assert "flds" in unit.available_fields
+    assert [(field.id, field.name, field.value) for field in unit.custom_fields] == [
+        (5, "Placa", "ABC123"),
+        (6, "Odometro", "1200"),
+    ]
+
+    client.update_unit_custom_field(
+        42, field_id=5, call_mode="update", name="Placa", value="XYZ789"
+    )
+    client.update_unit_custom_field(
+        42, field_id=0, call_mode="create", name="Color", value="Rojo"
+    )
+    client.update_unit_custom_field(42, field_id=6, call_mode="delete")
+
+    assert calls[0] == ("core/search_item", {"id": 42, "flags": 1033})
+    assert calls[1] == ("item/update_custom_field", {
+        "itemId": 42, "id": 5, "callMode": "update", "n": "Placa", "v": "XYZ789",
+    })
+    assert calls[2] == ("item/update_custom_field", {
+        "itemId": 42, "id": 0, "callMode": "create", "n": "Color", "v": "Rojo",
+    })
+    assert calls[3] == ("item/update_custom_field", {
+        "itemId": 42, "id": 6, "callMode": "delete",
+    })
 
 
 def test_people_gateway_operations_use_adapter_and_map_responses() -> None:
