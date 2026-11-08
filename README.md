@@ -10,7 +10,7 @@ Este repositorio corresponde a la prueba técnica de GPS Control. El backend inc
 | --- | --- |
 | Aplicación | <https://gps-control-mu.vercel.app> |
 | API | <https://gps-control-api-yb.onrender.com> |
-| Swagger | <https://gps-control-api-yb.onrender.com/docs> |
+| Documentación API | Disponible solo en desarrollo: `http://localhost:8000/docs` (deshabilitada en producción) |
 | Repositorio | https://github.com/yarbravo5/gps-control |
 
 Despliegue activo en Neon (PostgreSQL), Render (API Docker) y Vercel (SPA). El frontend consume la API mediante el proxy same-origin `/api` de Vercel y GitHub Actions mantiene Render despierto cada 10 minutos.
@@ -75,12 +75,17 @@ Roles disponibles:
 
 ## Pendientes de entrega
 
-- Verificar en producción el healthcheck, el acceso Admin, los permisos por rol, las operaciones Wialon, el mapa y el arranque en frío.
-- Revisar todas las vistas autenticadas en móvil, tablet y escritorio; completar contraste WCAG AA y pruebas con teclado/lector de pantalla.
-- Ejecutar Lighthouse móvil y agregar capturas reales de landing, dashboard, mapa y vista móvil.
-- Revisar el primer resultado de `pip-audit` en CI y definir rate limiting distribuido compatible con el proxy y las instancias desplegadas.
+- La landing pública cumple UX-07 en Lighthouse móvil: rendimiento 97, accesibilidad 96 y buenas prácticas 96, ejecutado en viewport de 360 × 800 px el 8 de noviembre de 2026. La captura está debajo; Lighthouse 13.6.0 y Chrome 156.
+- Revisar las vistas autenticadas (dashboard, mapa, tablas y formularios) en móvil, tablet y escritorio; completar la validación WCAG AA y pruebas con lector de pantalla. La revisión pública de la landing se hizo a 360, 768 y 1440 px.
+- Completar la prueba en producción de login Admin, RBAC, operaciones Wialon, mapa y arranque en frío con la cuenta de evaluación. El frontend de Vercel y ambos healthchecks respondieron 200 el 8 de noviembre de 2026; Vercel reportó el deployment del commit `7932ec6` como exitoso.
+- Mantener `TRUSTED_PROXY_IPS` vacío mientras no se confirme la IP/CIDR del peer que conecta con Render. Así se ignora el `X-Forwarded-For` no verificado; el límite distribuido por identidad sigue activo. Configurar rangos solo después de verificar el salto de proxy real.
+- `pip-audit -r requirements.txt` no encontró vulnerabilidades conocidas en la revisión local del 8 de noviembre de 2026; confirmar también el workflow CI después de corregir su YAML.
 
-La suite frontend (65 pruebas) y la suite backend pasan localmente. `npm audit --offline` reportó cero vulnerabilidades; `pip-audit` aún requiere confirmación en CI.
+Las suites locales pasan: 66 pruebas frontend y 132 backend. `npm audit --offline --omit=dev` reportó cero vulnerabilidades; `pip-audit` reportó cero vulnerabilidades conocidas en los requisitos Python.
+
+### Evidencia Lighthouse móvil — landing a 360 px
+
+![Captura de la landing pública en viewport móvil de 360 px](docs/screenshots/landing-mobile-360.jpg)
 
 ## Stack
 
