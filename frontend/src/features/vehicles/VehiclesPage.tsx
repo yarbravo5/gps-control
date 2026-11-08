@@ -5,6 +5,7 @@ import { EmptyState } from "../../components/feedback/EmptyState";
 import { ErrorState } from "../../components/feedback/ErrorState";
 import { LoadingState } from "../../components/feedback/LoadingState";
 import { Button } from "../../components/ui/Button";
+import { SortSelect } from "../../components/ui/SortSelect";
 import { TextField } from "../../components/ui/TextField";
 import { ApiError } from "../../services/api/apiError";
 import { useAuth } from "../auth/AuthProvider";
@@ -50,10 +51,11 @@ export function VehiclesPage() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<VehicleStatus | "">("");
   const [offset, setOffset] = useState(0);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
   const vehiclesQuery = useQuery({
-    queryKey: ["vehicles", query, status, offset],
-    queryFn: () => listVehicles({ query, status, offset, limit: PAGE_SIZE }),
+    queryKey: ["vehicles", query, status, offset, sortOrder],
+    queryFn: () => listVehicles({ query, status, offset, limit: PAGE_SIZE, sortOrder }),
     refetchInterval: () => getVehiclePollingInterval(document.visibilityState),
     refetchIntervalInBackground: false,
   });
@@ -133,6 +135,7 @@ export function VehiclesPage() {
         </div>
         <Button type="submit">Buscar</Button>
       </form>
+      <SortSelect options={[{ value: "asc", label: "Nombre (A–Z)" }, { value: "desc", label: "Nombre (Z–A)" }]} onChange={(value) => { setSortOrder(value as "asc" | "desc"); setOffset(0); }} value={sortOrder} />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.8fr)]">
         {fleetQuery.isPending ? <LoadingState label="Cargando posiciones de la flota" /> : null}
@@ -267,7 +270,7 @@ function SelectedVehicle({
     return <p className="self-center px-2 text-sm text-muted">El vehículo seleccionado ya no aparece en los resultados actuales.</p>;
   }
   return (
-    <aside aria-label="Detalle del vehículo seleccionado" aria-live="polite" className="grid content-start gap-3 border-y border-slate-200 py-4 xl:border-y-0 xl:border-l xl:pl-5">
+    <aside aria-label="Detalle del vehículo seleccionado" aria-live="polite" className="vehicle-detail-panel grid min-w-0 content-start gap-3 border-y border-slate-200 py-4 xl:border-y-0 xl:border-l xl:pl-5">
       <p className="eyebrow">Vehículo seleccionado</p>
       <h2 className="text-lg font-semibold text-slate-950">{vehicle.name}</h2>
       <p className="text-sm text-muted">{statusLabels[vehicle.status]} · {vehicle.speed_kmh === null ? "Velocidad sin dato" : `${vehicle.speed_kmh} km/h`}</p>

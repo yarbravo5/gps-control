@@ -53,13 +53,13 @@ export function CustomFieldsEditor({
     <fieldset className="grid gap-3 border-t border-slate-200 pt-4">
       <legend className="px-1 text-sm font-semibold text-slate-900">Campos personalizados</legend>
       {Object.entries(fields).map(([name, value]) => (
-        <div className="grid gap-2 sm:grid-cols-[minmax(8rem,0.7fr)_minmax(10rem,1fr)_auto] sm:items-end" key={name}>
+        <div className="custom-fields-row grid min-w-0 gap-2 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_auto] sm:items-end" key={name}>
           <TextField label="Nombre del campo" readOnly value={name} />
           <TextField label={`Valor de ${name}`} onChange={(event) => onFieldsChange({ ...fields, [name]: event.target.value })} value={value} />
           <button aria-label={`Eliminar campo ${name}`} className="min-h-11 rounded-control px-3 text-sm font-semibold text-wine-dark underline focus-visible:outline-2 focus-visible:outline-brand-teal" onClick={() => removeField(name)} type="button">Eliminar</button>
         </div>
       ))}
-      <div className="grid gap-2 sm:grid-cols-[minmax(8rem,0.7fr)_minmax(10rem,1fr)_auto] sm:items-end">
+      <div className="custom-fields-row grid min-w-0 gap-2 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_auto] sm:items-end">
         <TextField label="Nuevo campo" onChange={(event) => setNewName(event.target.value)} value={newName} />
         <TextField label="Valor" onChange={(event) => setNewValue(event.target.value)} value={newValue} />
         <button className="min-h-11 rounded-control border border-brand-teal px-3 text-sm font-semibold text-teal-900 focus-visible:outline-2 focus-visible:outline-brand-teal" onClick={addField} type="button">Agregar</button>

@@ -3423,6 +3423,15 @@ summary::-webkit-details-marker {
   transition: transform 160ms ease, box-shadow 180ms ease, border-color 160ms ease;
 }
 
+/* Use the detail panel's available width, not the viewport, for dense field forms. */
+.vehicle-detail-panel { container-type: inline-size; }
+.vehicle-detail-panel > *,
+.vehicle-detail-panel fieldset,
+.vehicle-detail-panel .custom-fields-row { min-width: 0; }
+@container (max-width: 34rem) {
+  .vehicle-detail-panel .custom-fields-row { grid-template-columns: minmax(0, 1fr); }
+}
+
 .app-shell button::after,
 .app-shell a[data-pointer-glow]::after {
   position: absolute;
