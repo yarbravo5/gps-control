@@ -118,7 +118,7 @@ Requisitos con ID analizados: **82** (73 obligatorios, 4 recomendados y 5 bonus;
 
 ## Verificaciones reproducibles registradas
 
-- Backend, actualizaci?n final: `backend/.venv/Scripts/python.exe -m pytest tests -q`; **138 passed** (incluye 2 pruebas nuevas de metadata de despliegue). La cobertura no se volvi? a calcular en la actualizaci?n. Los servicios de lógica de negocio registrados están por encima de 60 %; algunas rutas HTTP tienen cobertura menor, por ejemplo drivers y passengers, aunque la autorización dispone de tests de integración.
+- Backend final: backend/.venv/Scripts/python.exe -m pytest tests -q; **138 passed**, incluye 2 tests nuevos de metadata. No se recalculo cobertura.
 - Frontend: `npm.cmd test`; **15 archivos y 69 pruebas pasaron**. `npm.cmd run build` (incluye `tsc --noEmit`); correcto.
 - Dependencias frontend: `npm audit --offline --audit-level=high`; cero vulnerabilidades reportadas en el lockfile local. `pip-audit` no se ejecutó en local por restricción de red; CI exitoso en la evidencia previa del commit indicado en README.
 - Docker Compose: no verificable localmente porque Docker CLI no está instalado; existe workflow CI para validar/compilar/arrancar servicios. Consultar la ejecución de CI final antes de entrega.
@@ -128,7 +128,7 @@ Requisitos con ID analizados: **82** (73 obligatorios, 4 recomendados y 5 bonus;
 
 ## Decisión de cierre
 
-**¿Cumple todos los requisitos obligatorios? NO, todavía no puede afirmarse.** Las suites pasan; la política local de nuevas contraseñas se elevó a 12 caracteres y los logs ya salen en JSON. Para certificar cierre se necesita verificar persistencia Wialon con recurso de prueba y rollback, completar accesibilidad manual, inspeccionar la configuración efectiva del despliegue y aportar evidencia de que nunca se reescribió `main`. El usuario debe rotar la contraseña de evaluación y confirmar los 15 días de disponibilidad.
+**Closing decision:** consult the addendum below for the current state. External validations, new Admin credentials and availability still condition the email delivery.
 
 
 
@@ -140,27 +140,26 @@ La solicitud cita 59 cumplidos, 13 parciales y 1 no verificable; esos numeros no
 
 ### Pendientes anteriores
 
-| ID | Requisito y evidencia | Estado, pendiente y cierre | Tipo / clase | Riesgo de descalificacion |
+| ID | Requisito y evidencia | Estado y cierre | Tipo / clase | Riesgo de descalificacion |
 | --- | --- | --- | --- | --- |
-| RF-16 | CRUD conductor. PeopleService y gateway cubiertos con FakeGateway. | Mocks pasan; no hay create/update/delete real ni lectura posterior. Requiere recurso de prueba, snapshot, mutacion, lectura y restauracion autorizados. | Obligatorio / C: validacion externa | El servicio aplica patch; tests de people_service prueban preservacion y gateway tests mockean update_driver. Escritura Wialon real pendiente. |
-| RF-17 | Vincular/desvincular conductor. Servicio y adapter probados con doubles. | No se comprobo binding real. Probar unidad autorizada y revertir. | Obligatorio / C | API/UI de binding y tests de adapter con gateway falso. No hay binding real confirmado. |
-| RF-08 | CRUD pasajero/tag desde UI/API; gateway tests simulados. | Escrituras reales no confirmadas. Probar solo con tag autorizado y rollback. | Obligatorio / C | CRUD tags implementado; people_service/gateway tests usan fake. Escritura y lectura real pendientes. |
-| RF-09 | Asignar/desasignar pasajeros; casos locales probados con fake. | No se confirmo binding real reflejado en Wialon. Snapshot, mutacion, lectura y restauracion requieren autorizacion. | Obligatorio / C | Binding y detalle implementados; pruebas de casos de error con fake. Binding real no validado. |
-| RF-19 | CRUD campos de unidad; item/update_custom_field cubierto con mock. | No se verifico escritura real. Requiere unidad/campo autorizado y restauracion. | Obligatorio / C | item/update_custom_field probado con mock y editor UI. Persistencia real de campo pendiente. |
-| RF-27 | Tests comprueban merge de campos no mencionados y fallo seguro si falta estado base. | No se comprobo que Wialon preserve jp en escritura real. Leer snapshot, mutar campo, releer todos y restaurar; no autorizado ahora. | Obligatorio / C | Tests de people_service comprueban merge jp y borrado explicito; gateway simula update_tag. Persistencia Wialon real no validada. |
-| RF-24 | History usa messages/load_interval; limites 7 dias/5000 puntos, playback/velocidad probados con mocks; ADR en docs/decisions. | No hay lectura real del historial acreditada. Una lectura de solo lectura requiere unidad/rango permitido. | Obligatorio / C | messages/load_interval, limites 7 dias/5000, velocidad/playback probados con mock. Lectura real del history no validada. |
-| ARQ-03 | Repository, Gateway, DTO/Mapper y DI usados; Protocol facilita dobles. | No hay Strategy/Factory explicita. El texto dice donde tenga sentido; un unico proveedor no justifica patron ornamental. La guia documenta esta decision. | Condicionado / D: no bloqueante | Repository, Gateway, DTO/Mapper, DI demostrados. No hay Strategy/Factory en runtime; guia justifica que no aplica con un proveedor. |
-| SEG-07 | Argon2, bloqueo/rate limit; nuevas claves tienen 12+ caracteres, letra y numero. | La credencial Admin compartida en conversacion es comprometida. Rotar y validar nueva credencial/RBAC con procedimiento de docs/security/secret-rotation.md. | Obligatorio / A hasta probar acceso; accion C del propietario | Argon2, bloqueo y politica 12+ con letra/numero implementados y probados. Cuenta Admin compartida debe rotarse y volver a probarse. |
-| UX-03 | axe en landing/login local 360x800: cero hallazgos; teclado/foco visibles; test para nombres accesibles. | Vistas protegidas y lector de pantalla requieren revision manual; no se ejecuto screen reader. | Obligatorio / C: validacion manual | Landing/login local a 360px pasan axe sin violaciones; teclado/foco verificados. Screen reader y vistas protegidas requieren pase manual. |
-| DEP-02 | Settings requiere DB, JWT, Wialon y Admin; Docker corre Alembic+seed antes de Uvicorn. | Valores efectivos/cuotas no se inspeccionaron. Propietario confirma presencia, vigencia y margen sin compartir valores. | Obligatorio / C | Settings y Docker config implementados; proceso previo sano. Config efectiva de secretos/variables y cuotas no se inspeccionaron. |
-| DEP-03 | Preflight real: origen Vercel aceptado con credentials, attacker.invalid rechazado. | Cerrado; cumple. | Obligatorio / verificado | No. |
-| DEP-04 | 4 intentos health, timeouts, backoff 1/2/4, role=status y tests. | Cerrado; cumple. No se forzo suspension real. | Obligatorio / verificado | No. |
-| GIT-04 | Clone actual muestra commits incrementales. | No puede probarse retrospectivamente que nunca hubo force push. Consultar audit log GitHub si existe. | Obligatorio / C | Sin evidencia de violacion. |
-
+| RF-16 | CRUD conductor; PeopleService y gateway cubiertos con FakeGateway. | Mocks pasan; no hay create/update/delete real ni lectura posterior. Requiere recurso de prueba, snapshot, mutacion, lectura y restauracion autorizados. | Obligatorio / C: validacion externa | No por si solo. |
+| RF-17 | Vincular/desvincular conductor; servicio y adapter probados con doubles. | No se comprobo binding real. Probar unidad autorizada y revertir. | Obligatorio / C | No por si solo. |
+| RF-08 | CRUD pasajero/tag desde UI/API; gateway tests simulados. | Escrituras reales no confirmadas. Probar solo con tag autorizado y rollback. | Obligatorio / C | No por si solo. |
+| RF-09 | Asignar/desasignar pasajeros; casos locales probados con fake. | No se confirmo binding real reflejado. Snapshot, mutacion, lectura y restauracion requieren autorizacion. | Obligatorio / C | No por si solo. |
+| RF-19 | CRUD campos unidad; item/update_custom_field cubierto con mock. | No se verifico escritura real. Requiere unidad/campo autorizado y restauracion. | Obligatorio / C | No por si solo. |
+| RF-27 | Tests prueban merge de campos no mencionados y fallo seguro sin estado base. | No se comprobo que Wialon preserve jp en escritura real. Snapshot, mutacion, relectura de todos los campos y restauracion requieren autorizacion. | Obligatorio / C | No por si solo. |
+| RF-24 | messages/load_interval, limites 7 dias/5000 puntos, playback/velocidad probados con mocks; ADR de playback. | Lectura real del historial no acreditada. Lectura read-only con unidad/rango permitido; no se hizo. | Obligatorio / C | No por si solo. |
+| ARQ-03 | Repository, Gateway, DTO/Mapper y DI usados; Protocol facilita dobles. | No hay Strategy/Factory explicita. El requisito dice donde tenga sentido; documentado por que no aplica con un proveedor unico. | Condicionado / D: no bloqueante | No. No anadir patron ornamental. |
+| SEG-07 | Argon2, bloqueo/rate limit y politica 12+ con letra/numero probados. | Admin anterior compartido en conversacion: tratar como comprometido. Crear Admin respaldo, rotar principal y validar login/RBAC con nueva clave. | Obligatorio / A hasta probar acceso; accion C del propietario | Si no hay credenciales Admin validas, descalifica por criterio expreso. |
+| UX-03 | axe en landing/login local 360x800: cero hallazgos; foco y tabulacion verificados. | Vistas protegidas y lector de pantalla requieren revision manual; screen reader no ejecutado. | Obligatorio / C: validacion manual | No suele descalificar por si solo. |
+| DEP-02 | Settings requiere DB/JWT/Wialon/Admin; Docker corre Alembic+seed antes de Uvicorn. | Variables/secretos/cuotas efectivos no inspeccionados. Propietario confirma presencia/vigencia sin revelar valores. | Obligatorio / C | Config faltante puede afectar despliegue; la version actual arranco sana. |
+| DEP-03 | Preflight real: Vercel aceptado con credentials, attacker.invalid rechazado. | Cerrado y cumple. | Obligatorio / cerrado | No. |
+| DEP-04 | 4 intentos, timeouts, backoff 1/2/4, role=status y pruebas. | Cerrado y cumple; no se forzo suspension real. | Obligatorio / cerrado | No. |
+| GIT-04 | Clone actual muestra historial incremental. | No se demuestra retrospectivamente ausencia de force push. Consultar audit log GitHub si existe. | Obligatorio / C | Sin evidencia de violacion. |
 ### Evidencia y limites
 
 - Wialon: pruebas unitarias y de integracion HTTP usan mocks/FakeGateway. Lecturas reales previas cubrieron unidades/posiciones, recursos y personas; no hay evidencia de historial real. Escrituras reales confirmadas: **ninguna**. Los PATCH parciales preservan valores no enviados y fallan seguro si no leen estado base; solo se certifico con doubles. No se mutaron datos operativos.
-- Produccion: el 8 nov Render /version respondio 404. No se infiere SHA de /health ni de un 401. Se anadio endpoint con solo RENDER_GIT_COMMIT y RENDER_GIT_BRANCH; falta desplegar y comparar SHA completo. Docker ejecuta alembic upgrade head y seed antes de Uvicorn; si el proceso sirve /version, paso esa secuencia. No se leyeron secretos.
+- Produccion verificada: Render /version devolvio commit 9eec7800cc6dd7204be1dadde9d03f8c59e60399 y branch main; /health y proxy Vercel /health 200, /api/v1/auth/me sin sesion 401. CI backend/frontend/docker-compose completo success. GitHub repo HTTP 200. Vercel sirve el chunk LandingPage-sJsfMsF5.js con el nombre accesible corregido y CSS coincidente con el build probado. La secuencia Docker Alembic + seed + Uvicorn llego a servir version; no se inspeccionaron valores secretos.
 - Login: evidencia anterior del 8 nov de Admin, /auth/me, refresh/logout y vistas principales; no se repitio con la credencial comprometida. No se uso ni se cambio.
 - Accesibilidad: Chromium/axe local en landing/login mobile 360x800. Cero violaciones, cero overflow, skip link primero con foco visible e inputs tabulados. Sin lector de pantalla.
 - README 10.1: estan descritos los 11 items; capturas en docs/screenshots, links, setup, arquitectura/modelo, SOLID/patrones, OWASP, diseno, transformacion Wialon, supuestos, IA y limitaciones. Autor debe confirmar disclosure IA y capacidad de defensa. Swagger esta deshabilitado en produccion.

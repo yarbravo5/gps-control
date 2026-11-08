@@ -79,9 +79,9 @@ Roles disponibles:
 - Lighthouse historico de landing mobile: 96/96/96 a 360x800, ejecutado el 8 nov 2026.
 - Una revision anterior de Playwright cubrio siete vistas protegidas a 390/768/1440 px. En este cierre axe y teclado en landing/login local a 360 px: cero violaciones WCAG 2.1 A/AA, cero overflow y foco visible. No se uso lector de pantalla; vistas autenticadas requieren pase manual.
 - Evidencia de produccion del 8 nov: Admin/login, refresh/logout, dashboard, vehiculos, recursos, conductores, pasajeros, usuarios y auditoria respondieron correctamente; mapa con 62 unidades y 61 posiciones. No hubo mutaciones Wialon. Esta es evidencia historica, no una nueva sesion de esta auditoria.
-- Render /version devolvio 404 antes de publicar el endpoint de metadata. No se puede identificar revision mediante /health o 401; verificar SHA de /version despues del deploy.
+- Render /version confirmo revision 9eec7800cc6dd7204be1dadde9d03f8c59e60399 en main; /health y proxy Vercel respondieron 200. El endpoint /api/v1/auth/me sin sesion devuelve 401, esperado; no prueba por si solo una revision.
 - Suites locales de cierre: backend 138 tests, frontend 69; frontend typecheck/build correcto. No se recalculo cobertura backend. La verificacion final de pip-audit y Docker Compose corresponde al CI del commit final. Docker no esta instalado localmente.
-- CI documentado anteriormente paso para 1a4a584; confirmar el workflow asociado al commit final antes del correo.
+- GitHub Actions para el commit 9eec780: backend, frontend y docker-compose completaron con conclusion success. Repo publico respondio HTTP 200.
 - El plan gratuito de Render puede despertar lentamente; el workflow keep-alive reduce cold starts pero no garantiza disponibilidad.
 
 ### Evidencia Lighthouse móvil — landing a 360 px

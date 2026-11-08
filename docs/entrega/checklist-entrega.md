@@ -16,7 +16,7 @@
 - [ ] Prepare a unique 12+ character credential and send it only through a private channel; never put it in the repository.
 - [ ] Confirm the public repo and URLs are reachable, then test the evaluator Admin login using the rotated credential.
 - [ ] Check actual provider quotas/usage and only confirm 15-day availability if the owner can support it.
-- [ ] Revisar en los paneles de Render/Neon/Vercel que las variables necesarias existan y cuotas/uso tengan margen; no copiar ni compartir sus valores. El preflight CORS p?blico ya confirm? frontend permitido y origen ajeno rechazado.
+- [ ] Check required settings and usage/quota in Render/Neon/Vercel without copying values. CORS preflight accepted Vercel and rejected an unrelated origin.
 - [ ] Si es posible, acordar recurso Wialon de prueba y rollback, y probar create/update/delete/binding con evidencia antes/después. No usar los datos reales actuales sin autorización expresa.
 - [ ] Complete keyboard/zoom review of authenticated views and screen-reader review. Local landing/login passed axe WCAG 2.1 A/AA at 360 px; no screen reader was run.
 - [ ] Revisar que el disclosure IA refleje exactamente el uso real del autor y que puede explicar el código.

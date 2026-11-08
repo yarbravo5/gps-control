@@ -38,7 +38,7 @@ El seed define permisos granulares y tres roles (`admin`, `operator`, `viewer`).
 
 ## Pruebas documentadas
 
-- Backend: 136 tests passed, 81 % cobertura total en esta auditoría local; la cobertura global no sustituye revisar los módulos críticos.
+- Backend cierre: 138 tests passed; la cobertura no se recalculo en esa actualizacion.
 - Frontend: 15 archivos, 68 tests passed; typecheck y build correctos.
 - CI declara `pip-audit`, `npm audit`, pruebas, build y validación/arranque Docker Compose.
 - No hay linter configurado en scripts de frontend; la revisión con lector de pantalla requiere una persona.
