@@ -56,4 +56,3 @@ Fecha de revisión: 8 de noviembre de 2026. Estado basado en el código, las pru
 3. **Optimizar y medir UX-07.** Analizar el bundle y cargar componentes/paquetes con separación si mejora el resultado; ejecutar Lighthouse móvil sobre la landing desplegada. Criterio: rendimiento ≥85, accesibilidad ≥90, buenas prácticas ≥90 y reporte/captura en README.
 4. **Completar autenticación y observar auditorías.** Confirmar el primer CI con `pip-audit` y `npm audit`; decidir limitador compartido (DB/servicio compatible) para rate limiting, conservar lockout por cuenta. Criterio: CI publica resultado sin vulnerabilidades conocidas y pruebas de límites/expiración pasan sin confiar en cabeceras IP no verificadas.
 5. **Completar entrega documental.** Añadir capturas reales de landing, dashboard, mapa y móvil; revisar referencias SOLID; enviar URL y credenciales Admin por el canal privado de entrega y confirmar periodo de disponibilidad.
-
