@@ -55,12 +55,14 @@ Roles disponibles:
 - Guards de autenticación y autorización por permisos.
 - Shell de aplicación con navegación responsive y accesible.
 - Listado de vehículos conectado al API con búsqueda, filtros por estado y paginación del servidor.
+- Ordenamiento server-side con opciones explícitas en listados de vehículos, conductores, pasajeros, usuarios y auditoría.
 - Mapa OpenStreetMap con clustering, marcadores por estado, selección sincronizada y actualización cada 30 segundos que se pausa con la pestaña oculta.
 - Dashboard con KPIs y gráficas calculadas desde vehículos, conductores y pasajeros devueltos por Wialon.
 - CRUD de conductores y pasajeros con selección de recurso, búsqueda/paginación, custom fields y vinculación a unidades Wialon.
 - Panel Admin para usuarios/roles y reset de contraseña; vista paginada de auditoría exclusiva por permiso.
 - Exportación CSV de vehículos, conductores y pasajeros con permiso backend `export:csv` y neutralización de fórmulas.
 - Aviso de arranque en frío para el plan gratuito de Render.
+- Reintentos escalonados del healthcheck antes del login para errores transitorios del arranque en frío.
 - Pruebas de componentes, router, cliente HTTP y flujo de autenticación.
 
 ### Limitaciones conocidas y siguientes pasos
@@ -69,6 +71,22 @@ Roles disponibles:
 - El backend limita el historial a siete días y 5.000 puntos por consulta; rangos mayores deben dividirse.
 - La auditoría registra mutaciones de vehículos, conductores, pasajeros y administración, además de fallos de login; su consulta es exclusiva del Admin.
 - El dashboard incluye la hora UTC de consulta presentada en hora de Bogotá y actualiza sus métricas cada 30 segundos mientras la pestaña está visible. El mapa y la actualización de posiciones están en el módulo de vehículos.
+- La interfaz de campos personalizados del vehículo se ajusta al ancho real de su panel; el mapa usa tiles canónicos de OSM y conserva el `Referer` requerido por la política. El cambio de tiles requiere un nuevo despliegue para verse en producción.
+
+## Revisión pendiente frente a `docs/prueba_tecnica.md`
+
+| Requisito | Estado comprobable | Criterio para cerrarlo |
+| --- | --- | --- |
+| UX-01 responsive | Componentes ajustados para móvil, tablet y escritorio; el panel de campos usa container queries. | Verificar en navegador en 360, 768 y 1440 px todas las rutas autenticadas, incluidos mapa, panel de detalle, filtros y formularios, sin desbordamiento ni controles solapados. |
+| UX-03 accesibilidad | Hay etiquetas, foco visible, HTML semántico, estados anunciados y soporte `prefers-reduced-motion`. El contraste de todas las combinaciones renderizadas aún no tiene auditoría registrada. | Medir contraste WCAG AA en páginas y estados, revisar teclado/lector de pantalla y guardar evidencia de hallazgos y correcciones. |
+| UX-06 ordenar/filtrar/paginar | Búsqueda/filtros/paginación y orden server-side disponibles en listados operativos. | Validar manualmente combinación de orden, filtro y cambio de página en cada rol y vista. |
+| UX-07 Lighthouse | No hay medición ni captura versionada en este repositorio. | Lighthouse móvil en landing: rendimiento ≥85, accesibilidad ≥90 y buenas prácticas ≥90; guardar reporte/captura en README. |
+| README capturas | No están añadidas las capturas exigidas de landing, dashboard, mapa y vista móvil. | Incorporar capturas tomadas de la aplicación desplegada después de verificar sus flujos reales. |
+| DEP-04 inicio del backend | Healthcheck de login reintenta errores transitorios con pausas de 1, 2 y 4 segundos, con hasta cuatro intentos y feedback de arranque. | Confirmar comportamiento de extremo a extremo con backend dormido y despierto; comprobar anuncio de recuperación/error en producción. |
+| SEG-07 limitación de solicitudes | El login bloquea temporalmente intentos fallidos por cuenta; no hay rate limiting global por IP/endpoint. | Elegir un limitador compatible con la topología de despliegue y probar umbral, expiración y respuesta sin bloquear usuarios compartidos indebidamente. |
+| ARQ-04 errores uniformes | Errores útiles y sanitizados; no todo el API usa RFC 7807 de forma uniforme. | Definir contrato de error, migrar endpoints y cliente coordinadamente y cubrirlo con pruebas de integración. |
+
+El código registra denegaciones de autorización con identificador de usuario, permiso y ruta; no registra secretos ni dirección IP en esos eventos.
 
 ## Stack
 

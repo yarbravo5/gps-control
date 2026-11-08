@@ -34,7 +34,9 @@ export function resolveApiBaseUrl(
 }
 
 const baseURL = resolveApiBaseUrl(import.meta.env.VITE_API_URL, import.meta.env.DEV, window.location.origin);
-const BACKEND_HEALTH_TIMEOUT_MS = 60_000;
+const BACKEND_HEALTH_TIMEOUT_MS = 12_000;
+const HEALTH_MAX_ATTEMPTS = 4;
+const HEALTH_RETRY_DELAY_MS = [1_000, 2_000, 4_000] as const;
 
 export const httpClient = axios.create({
   baseURL,
@@ -45,15 +47,28 @@ export const httpClient = axios.create({
 
 export async function checkBackendHealth(): Promise<void> {
   const apiOrigin = new URL(baseURL, window.location.origin).origin;
-  try {
-    await axios.get(`${apiOrigin}/health`, {
-      timeout: BACKEND_HEALTH_TIMEOUT_MS,
-      withCredentials: false,
-      headers: { Accept: "application/json", "Cache-Control": "no-cache" },
-    });
-  } catch (error) {
-    throw normalizeApiError(error);
+  let lastError: unknown;
+  for (let attempt = 0; attempt < HEALTH_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      await axios.get(`${apiOrigin}/health`, {
+        timeout: BACKEND_HEALTH_TIMEOUT_MS,
+        withCredentials: false,
+        headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+      });
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableHealthError(error) || attempt === HEALTH_MAX_ATTEMPTS - 1) break;
+      await new Promise((resolve) => window.setTimeout(resolve, HEALTH_RETRY_DELAY_MS[attempt]));
+    }
   }
+  throw normalizeApiError(lastError);
+}
+
+function isRetryableHealthError(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false;
+  const status = error.response?.status;
+  return status === undefined || status === 429 || status === 502 || status === 503 || status === 504;
 }
 
 declare module "axios" {

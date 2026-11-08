@@ -1,6 +1,7 @@
 from collections.abc import Callable
+import logging
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -10,6 +11,7 @@ from app.models import User
 
 
 bearer_scheme = HTTPBearer(auto_error=False)
+security_logger = logging.getLogger("app.security")
 AUTHENTICATION_ERROR = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Credenciales inválidas o sesión expirada.",
@@ -41,8 +43,12 @@ def get_current_user(
 
 
 def require_permission(permission_code: str) -> Callable[..., User]:
-    def dependency(current_user: User = Depends(get_current_user)) -> User:
+    def dependency(request: Request, current_user: User = Depends(get_current_user)) -> User:
         if current_user.must_change_password:
+            security_logger.warning(
+                "Access denied: user_id=%s permission=%s path=%s reason=password_change_required",
+                current_user.id, permission_code, request.url.path,
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Debes cambiar tu contraseña antes de continuar.",
@@ -52,6 +58,10 @@ def require_permission(permission_code: str) -> Callable[..., User]:
             permission.code for permission in current_user.role.permissions
         }
         if permission_code not in permission_codes:
+            security_logger.warning(
+                "Access denied: user_id=%s permission=%s path=%s reason=permission_missing",
+                current_user.id, permission_code, request.url.path,
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No tienes permisos para realizar esta acción.",
@@ -63,8 +73,12 @@ def require_permission(permission_code: str) -> Callable[..., User]:
 
 
 def require_roles(*role_names: str) -> Callable[..., User]:
-    def dependency(current_user: User = Depends(get_current_user)) -> User:
+    def dependency(request: Request, current_user: User = Depends(get_current_user)) -> User:
         if current_user.role.name not in role_names:
+            security_logger.warning(
+                "Access denied: user_id=%s required_roles=%s path=%s reason=role_missing",
+                current_user.id, ",".join(role_names), request.url.path,
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No tienes permisos para realizar esta acción.",

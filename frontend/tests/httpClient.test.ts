@@ -24,9 +24,22 @@ describe("central HTTP client", () => {
     const configuredBase = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
     const apiOrigin = new URL(configuredBase, window.location.origin).origin;
     expect(get).toHaveBeenCalledWith(`${apiOrigin}/health`, expect.objectContaining({
-      timeout: 60_000,
+      timeout: 12_000,
       withCredentials: false,
     }));
+  });
+
+  it("retries transient health failures with increasing delays before login", async () => {
+    vi.useFakeTimers();
+    const get = vi.spyOn(axios, "get")
+      .mockRejectedValueOnce(Object.assign(new Error("warming"), { isAxiosError: true, response: { status: 503 } }))
+      .mockResolvedValueOnce({ status: 200 });
+
+    const pending = checkBackendHealth();
+    await vi.advanceTimersByTimeAsync(1_000);
+    await expect(pending).resolves.toBeUndefined();
+    expect(get).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
   });
 
   it("uses the same-origin API proxy for a public site with a stale localhost build variable", () => {
