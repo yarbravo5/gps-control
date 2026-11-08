@@ -75,18 +75,9 @@ Roles disponibles:
 
 ## Revisión pendiente frente a `docs/prueba_tecnica.md`
 
-| Requisito | Estado comprobable | Criterio para cerrarlo |
-| --- | --- | --- |
-| UX-01 responsive | Componentes ajustados para móvil, tablet y escritorio; el panel de campos usa container queries. | Verificar en navegador en 360, 768 y 1440 px todas las rutas autenticadas, incluidos mapa, panel de detalle, filtros y formularios, sin desbordamiento ni controles solapados. |
-| UX-03 accesibilidad | Hay etiquetas, foco visible, HTML semántico, estados anunciados y soporte `prefers-reduced-motion`. El contraste de todas las combinaciones renderizadas aún no tiene auditoría registrada. | Medir contraste WCAG AA en páginas y estados, revisar teclado/lector de pantalla y guardar evidencia de hallazgos y correcciones. |
-| UX-06 ordenar/filtrar/paginar | Búsqueda/filtros/paginación y orden server-side disponibles en listados operativos. | Validar manualmente combinación de orden, filtro y cambio de página en cada rol y vista. |
-| UX-07 Lighthouse | No hay medición ni captura versionada en este repositorio. | Lighthouse móvil en landing: rendimiento ≥85, accesibilidad ≥90 y buenas prácticas ≥90; guardar reporte/captura en README. |
-| README capturas | No están añadidas las capturas exigidas de landing, dashboard, mapa y vista móvil. | Incorporar capturas tomadas de la aplicación desplegada después de verificar sus flujos reales. |
-| DEP-04 inicio del backend | Healthcheck de login reintenta errores transitorios con pausas de 1, 2 y 4 segundos, con hasta cuatro intentos y feedback de arranque. | Confirmar comportamiento de extremo a extremo con backend dormido y despierto; comprobar anuncio de recuperación/error en producción. |
-| SEG-07 limitación de solicitudes | El login bloquea temporalmente intentos fallidos por cuenta; no hay rate limiting global por IP/endpoint. | Elegir un limitador compatible con la topología de despliegue y probar umbral, expiración y respuesta sin bloquear usuarios compartidos indebidamente. |
-| ARQ-04 errores uniformes | Errores útiles y sanitizados; no todo el API usa RFC 7807 de forma uniforme. | Definir contrato de error, migrar endpoints y cliente coordinadamente y cubrirlo con pruebas de integración. |
+La auditoría completa por identificador, evidencia en código y plan de cierre están en [docs/auditoria_final.md](docs/auditoria_final.md). Los asuntos que todavía requieren evidencia o decisiones de infraestructura son Lighthouse/capturas, revisión manual de accesibilidad en vistas autenticadas, auditoría `pip-audit`, rate limiting distribuido y verificación de producción.
 
-El código registra denegaciones de autorización con identificador de usuario, permiso y ruta; no registra secretos ni dirección IP en esos eventos.
+La captura de pantallas exigida por la prueba técnica aún no se incluye. No se usan capturas simuladas como evidencia del dashboard o del mapa.
 
 ## Stack
 
@@ -160,14 +151,17 @@ erDiagram
 
 ## Arquitectura y patrones (ARQ-01 a ARQ-03, ARQ-08)
 
-- **Responsabilidad única y capas:** `backend/app/api/v1/auth.py` adapta HTTP; `backend/app/services/auth_service.py` aplica reglas de autenticación; `backend/app/repositories/user_repository.py` consulta usuarios. La UI de cada feature está separada del cliente común `frontend/src/services/api/httpClient.ts`.
-- **Open/Closed y sustitución de dependencias:** los servicios de `backend/app/services/` reciben dependencias (por ejemplo, gateway Wialon) a través de funciones de `backend/app/api/v1/vehicles.py`, por lo que se pueden reemplazar en pruebas sin cambiar las reglas de negocio.
-- **Segregación de interfaces e inversión de dependencias:** protocolos como `DashboardGateway` (`backend/app/services/dashboard_service.py`) describen solo operaciones necesarias; el adaptador real `WialonClient` está en `backend/app/gateways/wialon/client.py`.
+- **Responsabilidad única:** [`auth.py`](backend/app/api/v1/auth.py#L36) convierte HTTP a una operación de autenticación; [`auth_service.py`](backend/app/services/auth_service.py#L46) concentra sus reglas; [`user_repository.py`](backend/app/repositories/user_repository.py#L18) realiza consultas de usuarios.
+- **Open/Closed e inversión de dependencias:** [`DashboardGateway`](backend/app/services/dashboard_service.py#L12) abstrae la lectura de métricas. El caso de uso [`get_fleet_dashboard`](backend/app/services/dashboard_service.py#L20) no depende del cliente HTTP concreto; las pruebas usan [`FakeDashboardGateway`](backend/tests/unit/test_dashboard_service.py#L17) para sustituir Wialon sin cambiar el servicio.
+- **Segregación de interfaces:** cada protocolo de servicio declara el conjunto de operaciones que consume ese dominio; por ejemplo, `DashboardGateway` solo ofrece las consultas de métricas.
+- **Sustitución de Liskov:** los gateways de prueba implementan el protocolo esperado por el servicio y se usan en los mismos casos de uso que el gateway real.
 - **Repository:** `user_repository.py` concentra consultas SQLAlchemy para usuarios y roles.
 - **Adapter/Gateway:** `WialonClient` encapsula HTTP, sesión y errores del proveedor.
 - **DTO/Mapper:** `backend/app/gateways/wialon/dto.py` y `backend/app/mappers/vehicle_mapper.py` convierten respuestas externas a contratos propios.
 - **Inyección de dependencias:** FastAPI `Depends` conecta sesiones y gateways con endpoints; facilita pruebas con sustitutos.
 - **Strategy:** los protocolos por caso de uso (p. ej. `DashboardGateway`) permiten seleccionar implementaciones compatibles; no se agrega una fábrica donde no existe una necesidad real.
+
+Las rutas frontend separan vistas por feature, y [`httpClient.ts`](frontend/src/services/api/httpClient.ts) centraliza cookies, renovación de sesión y normalización de errores.
 
 ## Modelo de amenazas (SEG-04)
 
@@ -180,9 +174,33 @@ erDiagram
 | Ataques al navegador o carga de contenido | CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options` y `Referrer-Policy` configurados en el despliegue. |
 | Fuerza bruta de contraseñas | Bloqueo temporal tras fallos consecutivos; no hay limitador global de solicitudes. |
 
+### Controles por categoría de seguridad
+
+| Categoría | Control aplicado y limitación conocida |
+| --- | --- |
+| SEG-01 Control de acceso | Permisos verificados en endpoints y guards de rutas; CORS se configura por origen. |
+| SEG-02 Criptografía | Argon2, access token de vida corta, refresh rotatorio en cookies HttpOnly/Secure en producción y HTTPS desplegado. |
+| SEG-03 Inyección | Esquemas Pydantic, SQLAlchemy parametrizado, salida React escapada y saneamiento CSV. |
+| SEG-04 Diseño inseguro | Amenazas y mitigaciones resumidas en la tabla anterior; permisos de mínimo privilegio. |
+| SEG-05 Configuración | CSP, HSTS, X-Content-Type-Options, X-Frame-Options y políticas de Referrer; Swagger deshabilitado en producción. |
+| SEG-06 Componentes | Lockfiles versionados; `npm audit --offline` no encontró vulnerabilidades en la revisión local. CI ahora ejecuta `npm audit --audit-level=high` y `pip-audit`; el resultado del primer workflow está pendiente. |
+| SEG-07 Identidad | Bloqueo temporal de login por intentos fallidos, validación de contraseña, sesión rotatoria y CSRF. Falta limitación distribuida de solicitudes por IP/endpoint. |
+| SEG-08 Integridad | Dependencias fijadas, CI, DTOs de Wialon validados y mapeo a contratos propios. |
+| SEG-09 Registro | Auditoría de operaciones y fallos de login; denegaciones de permiso registradas sin token, contraseña ni IP. |
+| SEG-10 Excepciones/SSRF | Host Wialon proviene de configuración; respuestas de error no exponen stack traces ni datos internos. |
+| SEG-11 CSRF | Token CSRF requerido en operaciones con refresh cookie, cierre de sesión y cambio de sesión. |
+
 ## Identidad visual y accesibilidad
 
 La paleta central está definida en `frontend/src/styles/globals.css`: rojo `#eb162c` para marca, rojo oscuro `#d51429` y vino `#a81a2b` para acciones/énfasis, gris `#6b6b6b` para secundarios, teal `#1e8c93` para foco y acentos, púrpura pálido `#eee8f2` para fondos y vino oscuro `#751324` para texto destacado. Los fondos claros usan texto oscuro. El cumplimiento de contraste WCAG debe medirse sobre los estados renderizados antes de declararlo; los colores de marca por sí solos no constituyen evidencia de conformidad.
+
+## Transformación de datos de Wialon
+
+- El mapper convierte timestamps UNIX a UTC; la UI presenta las fechas en `America/Bogota`.
+- La velocidad se expone como `speed_kmh`; coordenadas no finitas o fuera de latitud ±90°/longitud ±180° se descartan.
+- El rumbo se convierte en ocho sectores cardinales (N, NE, E, SE, S, SO, O, NO).
+- El estado es `moving` por encima de 3 km/h, `stopped` hasta ese umbral y `no_signal` cuando la posición no es válida o el último mensaje tiene más de 600 segundos (configurable).
+- Campos no disponibles se representan como `null` o listas vacías en los contratos tipados.
 
 ## Diseño responsive (UX-01)
 
@@ -373,7 +391,7 @@ La API se publica bajo `/api/v1`. El enlace Swagger de entrega solo está dispon
 | `GET` | `/audit` | Consulta auditoria. |
 | `GET` | `/health` | Healthcheck. |
 
-La documentacion interactiva completa esta en `/docs`.
+Los errores HTTP, de validación y del servidor siguen Problem Details (RFC 7807) con `application/problem+json`; los errores 422 incluyen una lista `errors` por campo. La documentación OpenAPI está disponible en `/docs` en desarrollo y se deshabilita en producción. La documentación interactiva completa está en `/docs` cuando el ambiente lo permite.
 
 ## Pruebas y calidad
 
@@ -428,6 +446,7 @@ El plan gratuito de Render suspende el servicio tras un periodo de inactividad. 
 
 - El frontend muestra un aviso cuando el arranque tarda mas de cinco segundos.
 - El login y el refresh usan un timeout extendido de 60 segundos.
+- Antes de enviar el login, el healthcheck reintenta fallos transitorios con pausas de 1, 2 y 4 segundos (máximo cuatro intentos).
 - El workflow `.github/workflows/keep-alive.yml` consulta `/health` cada 10 minutos para reducir los arranques en frío.
 
 ## Decisiones tecnicas
@@ -441,7 +460,7 @@ El plan gratuito de Render suspende el servicio tras un periodo de inactividad. 
 
 ## Uso de inteligencia artificial
 
-Se utilizo IA como asistente durante el desarrollo para diagnostico, revision de codigo, redaccion de pruebas, documentacion y preparacion del despliegue. El autor reviso y valido los cambios, ejecuto las pruebas y tomo las decisiones finales de arquitectura y alcance.
+Se utilizaron OpenAI ChatGPT y Codex como asistentes durante el desarrollo para diagnóstico, revisión de código, implementación puntual, redacción de pruebas y documentación. El autor revisó y validó los cambios, ejecutó las pruebas y tomó las decisiones finales de arquitectura y alcance.
 
 Pautas aplicadas:
 
