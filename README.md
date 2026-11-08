@@ -193,7 +193,7 @@ Las rutas frontend separan vistas por feature, y [`httpClient.ts`](frontend/src/
 | SEG-03 Inyección | Esquemas Pydantic, SQLAlchemy parametrizado, salida React escapada y saneamiento CSV. |
 | SEG-04 Diseño inseguro | Amenazas y mitigaciones resumidas en la tabla anterior; permisos de mínimo privilegio. |
 | SEG-05 Configuración | CSP, HSTS, X-Content-Type-Options, X-Frame-Options y políticas de Referrer; Swagger deshabilitado en producción. |
-| SEG-06 Componentes | Lockfiles versionados; `npm audit --offline` no encontró vulnerabilidades en la revisión local. CI ahora ejecuta `npm audit --audit-level=high` y `pip-audit`; el resultado del primer workflow está pendiente. |
+| SEG-06 Componentes | Lockfiles versionados; `npm audit --offline --audit-level=high` reportó cero vulnerabilidades en esta revisión local. CI ejecuta `npm audit --audit-level=high` y `pip-audit` en cada push a `main`. |
 | SEG-07 Identidad | Bloqueo temporal de login por intentos fallidos, validación de contraseña, sesión rotatoria y CSRF. Falta limitación distribuida de solicitudes por IP/endpoint. |
 | SEG-08 Integridad | Dependencias fijadas, CI, DTOs de Wialon validados y mapeo a contratos propios. |
 | SEG-09 Registro | Auditoría de operaciones y fallos de login; denegaciones de permiso registradas sin token, contraseña ni IP. |
@@ -485,6 +485,8 @@ Pautas aplicadas:
 
 ## Estado del proyecto
 
+Verificación local y de producción realizada el 8 de noviembre de 2026. Las capturas del dashboard y el mapa usan datos sintéticos para no publicar información operativa de la cuenta Wialon.
+
 | Area | Estado |
 | --- | --- |
 | Autenticacion y sesiones | Completo en backend y frontend |
@@ -495,4 +497,20 @@ Pautas aplicadas:
 | Conductores y pasajeros | CRUD, custom fields y bindings integrados |
 | Usuarios y auditoria | Paneles conectados; mutaciones de personas, vinculaciones, campos y usuarios auditadas |
 | Exportacion CSV | Descarga conectada para vehículos, conductores y pasajeros; saneamiento central y RBAC backend |
-| Despliegue publico | URLs configuradas en la sección de entrega; disponibilidad y credenciales deben comprobarse antes de cada evaluación |
+| Despliegue publico | Frontend y healthcheck respondieron HTTP 200; login Admin y endpoints de lectura protegidos respondieron correctamente. Confirmar disponibilidad antes de cada evaluación |
+
+En la comprobación de producción, `GET /auth/me` confirmó el rol Admin y sus 13 permisos; dashboard, vehículos, recursos, usuarios y auditoría devolvieron HTTP 200. Las vistas de vehículos, conductores, pasajeros, historial, usuarios y auditoría cargaron sin errores de JavaScript ni respuestas HTTP 5xx. No se ejecutaron mutaciones contra la cuenta Wialon durante esta revisión.
+
+El recorrido de navegador a 390 px no encontró desbordamiento horizontal. axe reportó un desajuste entre nombre accesible y texto visible en el enlace de marca y, en móvil, en el botón de cierre de sesión. Los nombres accesibles se alinearon en el código fuente; estas correcciones requieren despliegue para repetir el análisis contra producción. No se declara una auditoría completa de contraste WCAG ni de lector de pantalla.
+
+La última corrida local de esta revisión pasó 132 pruebas backend y 67 frontend; `npm run build` finalizó correctamente y `npm audit --offline --audit-level=high` encontró cero vulnerabilidades. La auditoría Python requiere acceso al índice de paquetes y no pudo repetirse en el entorno local restringido; el workflow de CI la ejecutará después del siguiente push.
+
+La contraseña de la cuenta usada para la prueba se compartió en esta conversación. Rótala antes de entregar esa cuenta a evaluadores y envía la nueva credencial por un canal privado.
+
+### Capturas de la aplicación
+
+![Dashboard con datos de muestra](docs/screenshots/dashboard-desktop.png)
+
+![Mapa de vehículos con datos de muestra](docs/screenshots/map-desktop.png)
+
+![Mapa de vehículos en vista móvil de 390 px con datos de muestra](docs/screenshots/map-mobile-390.png)

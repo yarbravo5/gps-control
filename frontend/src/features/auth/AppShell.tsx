@@ -53,12 +53,12 @@ export function AppShell() {
       <div className="app-topbar__inner flex min-h-16 items-center justify-between gap-3 px-4 sm:px-6">
         <div className="flex items-center gap-3">
           <button aria-controls="app-navigation" aria-expanded={mobileNavigationOpen} aria-label={mobileNavigationOpen ? "Cerrar navegación" : "Abrir navegación"} className="mobile-nav-toggle" onClick={() => setMobileNavigationOpen((open) => !open)} type="button"><DashboardIcon className="app-menu-icon" name={mobileNavigationOpen ? "close" : "menu"} /></button>
-          <NavLink aria-label="GPS Control, panel de control" className="flex items-center gap-2 rounded focus-visible:outline-2 focus-visible:outline-brand-teal" to="/app"><span aria-hidden="true" className="grid size-9 place-items-center rounded-xl bg-brand-red-action font-black text-white">G</span><span className="text-sm font-extrabold tracking-tight sm:text-base">GPS <span className="text-brand-wine">Control</span></span></NavLink>
+          <NavLink className="flex items-center gap-2 rounded focus-visible:outline-2 focus-visible:outline-brand-teal" to="/app"><span aria-hidden="true" className="grid size-9 place-items-center rounded-xl bg-brand-red-action font-black text-white">G</span><span className="text-sm font-extrabold tracking-tight sm:text-base">GPS <span className="text-brand-wine">Control</span></span></NavLink>
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden text-right sm:block"><p className="max-w-48 truncate text-sm font-semibold text-slate-900">{user?.name}</p><p className="text-xs text-muted">{user ? roleLabels[user.role] : ""}</p></div>
           <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-purple-soft text-sm font-bold text-wine-dark">{user?.name.slice(0, 1).toLocaleUpperCase()}</span>
-          <Button aria-label="Cerrar sesión" className="min-h-10 px-3 text-xs sm:px-4 sm:text-sm" onClick={() => void signOut()} variant="secondary"><span className="sm:hidden">Salir</span><span className="hidden sm:inline">Cerrar sesión</span></Button>
+          <Button className="min-h-10 px-3 text-xs sm:px-4 sm:text-sm" onClick={() => void signOut()} variant="secondary"><span className="sm:hidden">Salir</span><span className="hidden sm:inline">Cerrar sesión</span></Button>
         </div>
       </div>
     </header>

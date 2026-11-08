@@ -20,6 +20,12 @@ import { AppShell } from "../src/features/auth/AppShell";
 describe("dashboard navigation drawer", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("keeps the brand link name aligned with its visible label", () => {
+    render(<MemoryRouter initialEntries={["/app"]}><Routes><Route path="/app" element={<AppShell />}><Route index element={<h1>Centro de operaciones</h1>} /></Route></Routes></MemoryRouter>);
+
+    expect(screen.getByRole("link", { name: "GPS Control" })).toBeInTheDocument();
+  });
+
   it("opens as an overlay and closes with Escape without removing the page content", () => {
     render(<MemoryRouter initialEntries={["/app"]}><Routes><Route path="/app" element={<AppShell />}><Route index element={<h1>Centro de operaciones</h1>} /></Route></Routes></MemoryRouter>);
 
