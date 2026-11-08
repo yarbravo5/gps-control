@@ -75,15 +75,15 @@ Roles disponibles:
 
 ## Estado de validación y trabajo pendiente
 
-- La landing pública cumple UX-07 en Lighthouse móvil: rendimiento 95, accesibilidad 96 y buenas prácticas 96, ejecutado en viewport de 360 × 800 px el 8 de noviembre de 2026. La captura está debajo; Lighthouse 13.6.0 y Chrome 156.
-- El entry JavaScript de producción quedó en 481,10 kB (152,65 kB gzip); la landing diferida ocupa 22,12 kB (6,17 kB gzip). Vite ya no emite la advertencia del límite de chunk.
-- Revisar las vistas autenticadas (dashboard, mapa, tablas y formularios) en móvil, tablet y escritorio; completar la validación WCAG AA y pruebas con lector de pantalla. La revisión pública de la landing se hizo a 360, 768 y 1440 px.
-- Completar la prueba en producción de login Admin, RBAC, operaciones Wialon, mapa y arranque en frío con la cuenta de evaluación. El frontend de Vercel y ambos healthchecks respondieron 200 el 8 de noviembre de 2026; el proxy `/api/v1/auth/me` respondió 401 como corresponde sin sesión. Vercel reportó el deployment del commit `c6910b9` como exitoso. La primera consulta al healthcheck por Vercel tardó 38,5 s; la consulta directa posterior respondió en aproximadamente 1 s.
-- Una baldosa de OpenStreetMap respondió 200 con el `Referer` del sitio; queda comprobar el mapa renderizado con posiciones reales tras autenticar.
-- Mantener `TRUSTED_PROXY_IPS` vacío mientras no se confirme la IP/CIDR del peer que conecta con Render. Así se ignora el `X-Forwarded-For` no verificado; el límite distribuido por identidad sigue activo. Configurar rangos solo después de verificar el salto de proxy real.
-- CI pasó para el commit `c6910b9`: tests y build del backend/frontend, `pip-audit`, `npm audit` y Docker Compose.
+- La landing pública cumple UX-07 en Lighthouse móvil: rendimiento 96, accesibilidad 96 y buenas prácticas 96, ejecutado en viewport de 360 × 800 px el 8 de noviembre de 2026. La captura de la landing está debajo; se generó con Lighthouse 13.6.0 y Chrome 156.
+- El entry JavaScript de producción quedó en 481,32 kB (152,72 kB gzip); la landing diferida ocupa 22,12 kB (6,17 kB gzip). Vite ya no emite la advertencia del límite de chunk.
+- Playwright y axe revisaron las siete vistas protegidas a 1440 px y el mapa a 390 px: sin errores JavaScript, respuestas HTTP 5xx, desbordamiento horizontal ni violaciones WCAG 2.1 A/AA en las reglas automatizadas. Falta la revisión manual con lector de pantalla y revisar todas las vistas autenticadas en tablet y en otros anchos móviles.
+- La prueba de producción del 8 de noviembre confirmó login Admin, rol y 13 permisos, renovación de sesión y logout. Dashboard, vehículos, recursos Wialon, conductores, pasajeros, usuarios y auditoría respondieron 200. El mapa cargó 62 unidades y 61 posiciones válidas. No se ejecutaron mutaciones sobre datos Wialon.
+- Frontend y healthcheck respondieron 200. Vercel sirvió los assets del commit `1a4a584`; la API confirmó salud y autenticación. El plan gratuito de Render puede tardar en despertar.
+- La variable `TRUSTED_PROXY_IPS` sigue vacía hasta confirmar la IP/CIDR del peer de Render. Así se ignora el `X-Forwarded-For` no verificado; los límites distribuidos de login siguen activos.
+- CI pasó para el commit `1a4a584`: pruebas y build de backend/frontend, `pip-audit`, `npm audit` y Docker Compose.
 
-Las suites pasan: 66 pruebas frontend y 132 backend. `npm audit --offline --omit=dev` y `npm audit --audit-level=high` reportaron cero vulnerabilidades; `pip-audit -r requirements.txt` no encontró vulnerabilidades conocidas en los requisitos Python.
+Las suites pasan: 132 pruebas backend y 67 frontend. `npm audit --offline --audit-level=high` reportó cero vulnerabilidades; `pip-audit` pasó en CI.
 
 ### Evidencia Lighthouse móvil — landing a 360 px
 
@@ -491,19 +491,13 @@ Verificación local y de producción realizada el 8 de noviembre de 2026. Las ca
 | --- | --- |
 | Autenticacion y sesiones | Completo en backend y frontend |
 | RBAC y permisos | Completo en backend; guards en frontend |
-| Dashboard | API de métricas protegida y gráficas frontend; pendiente verificar con recursos reales de Wialon en producción |
+| Dashboard | API de métricas y gráficas verificadas con recursos de Wialon en producción |
 | Vehiculos y Wialon | Listado, mapa y detalle con conductor/pasajeros integrados |
 | Historial de recorridos | Backend y reproducción en frontend implementados; límite de 5.000 puntos por consulta |
 | Conductores y pasajeros | CRUD, custom fields y bindings integrados |
 | Usuarios y auditoria | Paneles conectados; mutaciones de personas, vinculaciones, campos y usuarios auditadas |
 | Exportacion CSV | Descarga conectada para vehículos, conductores y pasajeros; saneamiento central y RBAC backend |
 | Despliegue publico | Frontend y healthcheck respondieron HTTP 200; login Admin y endpoints de lectura protegidos respondieron correctamente. Confirmar disponibilidad antes de cada evaluación |
-
-En la comprobación de producción, `GET /auth/me` confirmó el rol Admin y sus 13 permisos; dashboard, vehículos, recursos, usuarios y auditoría devolvieron HTTP 200. Las vistas de vehículos, conductores, pasajeros, historial, usuarios y auditoría cargaron sin errores de JavaScript ni respuestas HTTP 5xx. No se ejecutaron mutaciones contra la cuenta Wialon durante esta revisión.
-
-El recorrido de navegador a 390 px no encontró desbordamiento horizontal. axe reportó un desajuste entre nombre accesible y texto visible en el enlace de marca y, en móvil, en el botón de cierre de sesión. Los nombres accesibles se alinearon en el código fuente; estas correcciones requieren despliegue para repetir el análisis contra producción. No se declara una auditoría completa de contraste WCAG ni de lector de pantalla.
-
-La última corrida local de esta revisión pasó 132 pruebas backend y 67 frontend; `npm run build` finalizó correctamente y `npm audit --offline --audit-level=high` encontró cero vulnerabilidades. La auditoría Python requiere acceso al índice de paquetes y no pudo repetirse en el entorno local restringido; el workflow de CI la ejecutará después del siguiente push.
 
 La contraseña de la cuenta usada para la prueba se compartió en esta conversación. Rótala antes de entregar esa cuenta a evaluadores y envía la nueva credencial por un canal privado.
 
