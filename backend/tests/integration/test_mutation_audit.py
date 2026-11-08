@@ -78,7 +78,7 @@ def test_people_mutations_are_audited_without_sensitive_values(client: TestClien
             headers={"Authorization": f"Bearer {admin['access_token']}"},
         )
         assert audit.status_code == 200
-        entries = {item["action"]: item for item in audit.json()}
+        entries = {item["action"]: item for item in audit.json()["items"]}
 
         driver_entry = entries["driver.created"]
         assert driver_entry["entity"] == "driver"

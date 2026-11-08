@@ -109,7 +109,7 @@ def test_operator_can_create_update_and_delete_vehicle_custom_fields(client: Tes
     assert audit.status_code == 200
     entry = next(
         item
-        for item in audit.json()
+        for item in audit.json()["items"]
         if item["action"] == "vehicle.custom_fields_updated"
     )
     assert entry["entity"] == "vehicle"
