@@ -58,7 +58,7 @@ El endpoint restringe a 7 días y 5.000 puntos y devuelve error si excede; el us
 
 **¿Qué cubre el 81 %?**
 
-Es cobertura global de la suite local backend; el objetivo mínimo es cobertura razonable de lógica de negocio. La suite frontend tiene 68 pruebas. No hay E2E Playwright mantenido como suite del repo.
+Es cobertura global de la suite local backend; el objetivo mínimo es cobertura razonable de lógica de negocio. La suite frontend tiene 69 pruebas. No hay E2E Playwright mantenido como suite del repo.
 
 **¿Por qué la respuesta de la auditoría dice “no se certifica todo”?**
 

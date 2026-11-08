@@ -10,7 +10,7 @@
 | 8–12 | Conductores/pasajeros y campos | Wialon como fuente de verdad; merge de campos existentes; no reintentar escrituras ambiguas. |
 | 12–15 | Código gateway→servicio→API y un test | Capas, DI por protocolo, DTO/mappers y mock de Wialon. |
 | 15–18 | Historial, CSV y auditoría | Límites de consulta, playback, CSV injection, trazabilidad. |
-| 18–20 | CI, seguridad y limitaciones | 136/68 pruebas, cobertura, rotación de admin y requisitos externos pendientes. |
+| 18–20 | CI, seguridad y limitaciones | 138/69 pruebas, cobertura, rotación de admin y requisitos externos pendientes. |
 
 Para 15 minutos, mostrar solo una operación completa (listar vehículo) desde UI a gateway y un test RBAC. Para 30, ampliar con inspección de migración, retry de sesión Wialon y errores Problem Details.
 

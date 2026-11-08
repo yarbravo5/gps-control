@@ -115,7 +115,7 @@ export function LandingPage() {
     <a className="skip-link" href="#contenido">Saltar al contenido</a>
     <header className={`landing-header${isScrolled ? " landing-header--scrolled" : ""}`}>
         <div className="landing-container landing-header__inner">
-        <a aria-label="GPS Control, volver al inicio" className="landing-logo" href="#inicio"><BrandMark/><span>GPS <strong>CONTROL</strong></span></a>
+        <a className="landing-logo" href="#inicio"><BrandMark/><span>GPS <strong>CONTROL</strong></span></a>
         <nav aria-label="Navegación pública" className="landing-nav landing-nav--desktop">
           <a aria-current={activeSection === "funcionalidades" ? "location" : undefined} className="landing-nav__link" href="#funcionalidades">Funcionalidades</a><a aria-current={activeSection === "soluciones" ? "location" : undefined} className="landing-nav__link" href="#soluciones">Soluciones</a><a aria-current={activeSection === "como-funciona" ? "location" : undefined} className="landing-nav__link" href="#como-funciona">Cómo funciona</a>
         </nav>
@@ -157,7 +157,7 @@ export function LandingPage() {
       <section aria-labelledby="features-heading" className="landing-section landing-container" id="funcionalidades">
         <div className="landing-section__heading"><p className="landing-eyebrow">Una operación conectada</p><h2 id="features-heading">La información que necesitas,<br/><span>sin perder de vista el camino.</span></h2></div>
         <div className="landing-features">
-          {features.map((feature) => <article className="landing-feature" key={feature.number}><div className="landing-feature__top"><FeatureIcon icon={feature.icon}/><span>{feature.number}</span></div><h3>{feature.title}</h3><p>{feature.description}</p><a aria-label={`Conocer ${feature.title}`} className="landing-feature__arrow" href="#como-funciona">Conocer más <span aria-hidden="true">↗</span></a></article>)}
+          {features.map((feature) => <article className="landing-feature" key={feature.number}><div className="landing-feature__top"><FeatureIcon icon={feature.icon}/><span>{feature.number}</span></div><h3>{feature.title}</h3><p>{feature.description}</p><a aria-label={`Conocer más: ${feature.title}`} className="landing-feature__arrow" href="#como-funciona">Conocer más <span aria-hidden="true">↗</span></a></article>)}
         </div>
       </section>
 
@@ -176,6 +176,6 @@ export function LandingPage() {
       <section className="landing-final-cta"><div className="landing-container landing-final-cta__inner"><div><p className="landing-eyebrow">GPS Control</p><h2>Haz visible cada parte de tu operación.</h2><p>Empieza con una vista más clara de tus vehículos, recorridos y equipo.</p></div>{isLoading ? <span role="status">Verificando sesión…</span> : user ? <Link className="landing-button landing-button--light" to={destination}>{actionLabel}<span aria-hidden="true"> →</span></Link> : <a className="landing-button landing-button--light" href="#funcionalidades">Explorar funcionalidades<span aria-hidden="true"> →</span></a>}</div></section>
     </main>
 
-    <footer className="landing-footer"><div className="landing-container landing-footer__main"><a aria-label="GPS Control, volver al inicio" className="landing-logo landing-logo--footer" href="#inicio"><BrandMark/><span>GPS <strong>CONTROL</strong></span></a><p>Monitoreo satelital y gestión de flotas para una operación más organizada.</p><nav aria-label="Enlaces del pie de página"><a href="#funcionalidades">Funcionalidades</a><a href="#soluciones">Soluciones</a><a href="#como-funciona">Cómo funciona</a></nav></div><div className="landing-container landing-footer__bottom"><span>© {new Date().getFullYear()} GPS Control</span><a href="#inicio">Volver arriba ↑</a></div></footer>
+    <footer className="landing-footer"><div className="landing-container landing-footer__main"><a className="landing-logo landing-logo--footer" href="#inicio"><BrandMark/><span>GPS <strong>CONTROL</strong></span></a><p>Monitoreo satelital y gestión de flotas para una operación más organizada.</p><nav aria-label="Enlaces del pie de página"><a href="#funcionalidades">Funcionalidades</a><a href="#soluciones">Soluciones</a><a href="#como-funciona">Cómo funciona</a></nav></div><div className="landing-container landing-footer__bottom"><span>© {new Date().getFullYear()} GPS Control</span><a href="#inicio">Volver arriba ↑</a></div></footer>
   </div>;
 }

@@ -10,6 +10,7 @@ Este repositorio corresponde a la prueba técnica de GPS Control. El backend inc
 | --- | --- |
 | Aplicación | <https://gps-control-mu.vercel.app> |
 | API | <https://gps-control-api-yb.onrender.com> |
+| Salud/version (metadata no sensible) | /health y /version (commit y branch de Render, sin secretos) |
 | Documentación API | Disponible solo en desarrollo: `http://localhost:8000/docs` (deshabilitada en producción) |
 | Repositorio | https://github.com/yarbravo5/gps-control |
 
@@ -73,17 +74,15 @@ Roles disponibles:
 - El dashboard incluye la hora UTC de consulta presentada en hora de Bogotá y actualiza sus métricas cada 30 segundos mientras la pestaña está visible. El mapa y la actualización de posiciones están en el módulo de vehículos.
 - La interfaz de campos personalizados del vehículo se ajusta al ancho real de su panel; el mapa usa tiles canónicos de OSM y conserva el `Referer` requerido por la política. El cambio de tiles requiere un nuevo despliegue para verse en producción.
 
-## Estado de validación y trabajo pendiente
+## Estado de validacion y trabajo pendiente
 
-- La landing pública cumple UX-07 en Lighthouse móvil: rendimiento 96, accesibilidad 96 y buenas prácticas 96, ejecutado en viewport de 360 × 800 px el 8 de noviembre de 2026. La captura de la landing está debajo; se generó con Lighthouse 13.6.0 y Chrome 156.
-- El entry JavaScript de producción quedó en 481,32 kB (152,72 kB gzip); la landing diferida ocupa 22,12 kB (6,17 kB gzip). Vite ya no emite la advertencia del límite de chunk.
-- Playwright y axe revisaron las siete vistas protegidas a 390, 768 y 1440 px: sin errores JavaScript, respuestas HTTP 5xx, desbordamiento horizontal ni violaciones WCAG 2.1 A/AA en las reglas automatizadas. Falta la revisión manual con lector de pantalla.
-- La prueba de producción del 8 de noviembre confirmó login Admin, rol y 13 permisos, renovación de sesión y logout. Dashboard, vehículos, recursos Wialon, conductores, pasajeros, usuarios y auditoría respondieron 200. El mapa cargó 62 unidades y 61 posiciones válidas. No se ejecutaron mutaciones sobre datos Wialon.
-- Frontend y healthcheck respondieron 200. Vercel sirvió los assets del commit `1a4a584`; la API confirmó salud y autenticación. El plan gratuito de Render puede tardar en despertar.
-- La variable `TRUSTED_PROXY_IPS` sigue vacía hasta confirmar la IP/CIDR del peer de Render. Así se ignora el `X-Forwarded-For` no verificado; los límites distribuidos de login siguen activos.
-- CI pasó para el commit `1a4a584`: pruebas y build de backend/frontend, `pip-audit`, `npm audit` y Docker Compose.
-
-Las suites locales pasan: 136 pruebas backend (81 % de cobertura total) y 68 pruebas frontend. `npm audit --offline --audit-level=high` reportó cero vulnerabilidades; `pip-audit` pasó en CI según la ejecución documentada arriba. Docker no está instalado en el entorno de esta auditoría, por lo que Compose no se ejecutó localmente.
+- Lighthouse historico de landing mobile: 96/96/96 a 360x800, ejecutado el 8 nov 2026.
+- Una revision anterior de Playwright cubrio siete vistas protegidas a 390/768/1440 px. En este cierre axe y teclado en landing/login local a 360 px: cero violaciones WCAG 2.1 A/AA, cero overflow y foco visible. No se uso lector de pantalla; vistas autenticadas requieren pase manual.
+- Evidencia de produccion del 8 nov: Admin/login, refresh/logout, dashboard, vehiculos, recursos, conductores, pasajeros, usuarios y auditoria respondieron correctamente; mapa con 62 unidades y 61 posiciones. No hubo mutaciones Wialon. Esta es evidencia historica, no una nueva sesion de esta auditoria.
+- Render /version devolvio 404 antes de publicar el endpoint de metadata. No se puede identificar revision mediante /health o 401; verificar SHA de /version despues del deploy.
+- Suites locales de cierre: backend 138 tests, frontend 69; frontend typecheck/build correcto. No se recalculo cobertura backend. La verificacion final de pip-audit y Docker Compose corresponde al CI del commit final. Docker no esta instalado localmente.
+- CI documentado anteriormente paso para 1a4a584; confirmar el workflow asociado al commit final antes del correo.
+- El plan gratuito de Render puede despertar lentamente; el workflow keep-alive reduce cold starts pero no garantiza disponibilidad.
 
 ### Evidencia Lighthouse móvil — landing a 360 px
 

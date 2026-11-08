@@ -93,10 +93,16 @@ describe("landing pública", () => {
     act(() => window.dispatchEvent(new Event("scroll")));
     expect(header).toHaveClass("landing-header--scrolled");
     await screen.findAllByRole("link", { name: "Iniciar sesión" });
-    const logo = screen.getAllByRole("link", { name: "GPS Control, volver al inicio" })[0];
+    const logo = screen.getAllByRole("link", { name: "GPS CONTROL" })[0];
     expect(logo).toHaveAttribute("href", "#inicio");
     await user.click(logo);
     expect(window.location.hash).toBe("#inicio");
+  });
+
+  it("conserva nombres accesibles que incluyen el texto visible de cada enlace", async () => {
+    renderRoute();
+    expect(await screen.findAllByRole("link", { name: "GPS CONTROL" })).toHaveLength(2);
+    expect(screen.getByRole("link", { name: "Conocer más: Monitoreo de vehículos" })).toBeVisible();
   });
 
   it("muestra el acceso al panel cuando existe una sesión autenticada", async () => {

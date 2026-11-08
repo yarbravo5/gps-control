@@ -1,35 +1,24 @@
-# Revision y rotacion de credenciales
+# Credential review and rotation
 
-## Estado
+## Current state
 
-El propietario confirmo que el token Wialon original fue entregado por GPS
-Control y nunca se publico en GitHub ni en archivos versionados. Esta auditoria
-no requiere cambiarlo y no se debe reemplazar por este procedimiento.
+The evaluation Admin password was shared in a conversation and must be treated as compromised. Do not reuse or send it. No production credential was read or changed in this audit. The owner previously confirmed the Wialon token was supplied by GPS Control and was not published; this audit did not inspect or rotate it.
 
-La rotacion de otras credenciales solo se realiza si el propietario detecta una
-exposicion o decide renovarlas desde los paneles de los proveedores. Esta
-auditoria no comprobo credenciales ni configuracion de Neon, Render o cuentas
-locales.
+## Rotate Admin access without lockout
 
-## Procedimiento si el propietario decide rotar otra credencial
+1. Over HTTPS, while signed in to the existing Admin account, create a second Admin backup account. Use a unique temporary password with at least 12 characters, a letter and a number. Require password change at first sign-in. Never place the password in this document, repository, screenshot or shell history.
+2. Sign out and sign in with the backup account. Complete the required password change. Confirm the account role and that Administration is accessible.
+3. While keeping the backup account available, sign in to the primary Admin account and change its password in the application. Password change revokes sessions; sign in again with the new password and confirm Admin access. If that fails, recover through the backup account.
+4. With Admin, create a temporary non-admin user and verify first-login password change. Sign in as that user and confirm the forced change before using the app. Verify Viewer/Operator cannot perform an Admin-only action. Then deactivate or remove the temporary user.
+5. Send only the newly verified evaluation credential over a private channel. Keep the backup Admin until evaluation is complete.
+6. Changing ADMIN_PASSWORD in hosting settings does not update an already-created database user; it is not the rotation mechanism for an existing account.
 
-1. **Neon:** si rota la contraseña PostgreSQL, actualizar `DATABASE_URL` en la
-   plataforma y configuracion local, conservar TLS y verificar conexion y
-   migraciones.
-2. **JWT:** usar valores aleatorios distintos por ambiente. La rotacion invalida
-   tokens y obliga a iniciar sesion de nuevo.
-3. **Administrador:** cambiar la contraseña desde el procedimiento
-   administrativo y revocar sesiones. Cambiar solo `ADMIN_PASSWORD` no actualiza
-   usuarios ya creados por el seed.
+## Other provider credentials
 
-No copiar secretos a tickets, comandos visibles, capturas, documentacion o
-historial de shell. Introducirlos directamente en los paneles de proveedores o
-en archivos locales ignorados por Git.
+- Neon: if the database password is rotated, update the provider variable, retain TLS and verify DB connection/migrations.
+- JWT: use distinct random values per environment; rotation invalidates sessions.
+- Do not copy secrets into tickets, shell history, screenshots, docs or commits. Enter them only in the hosting dashboard or ignored local files.
 
-## Verificacion posterior
+## Verification
 
-- No rotar ni revocar el token Wialon como parte de esta auditoria.
-- Si se rota otra credencial, verificar healthcheck, conexion a PostgreSQL,
-  migraciones, login, refresh y logout desde las plataformas correspondientes.
-- No registrar una rotacion como completada sin confirmacion del propietario y
-  verificacion del servicio.
+After a rotation, verify health, database connection/migrations, Admin login, refresh and logout. Do not record rotation as complete without owner confirmation and service verification. Do not rotate the Wialon token as part of this audit.

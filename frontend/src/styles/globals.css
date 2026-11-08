@@ -2689,7 +2689,7 @@ summary::-webkit-details-marker {
 
 .landing-section__heading > p:last-child,
 .landing-solution p {
-  color: var(--color-brand-gray);
+  color: var(--color-muted);
 }
 
 .landing-feature {
@@ -2763,7 +2763,7 @@ summary::-webkit-details-marker {
 }
 
 .landing-process {
-  background: var(--color-brand-gray);
+  background: var(--color-muted);
   color: var(--color-purple-soft);
 }
 
@@ -2825,7 +2825,7 @@ summary::-webkit-details-marker {
 
 .landing-footer {
   background: var(--color-purple-soft);
-  color: var(--color-brand-gray);
+  color: var(--color-muted);
 }
 
 .landing-logo--footer,
@@ -2837,7 +2837,7 @@ summary::-webkit-details-marker {
 .landing-footer__main > p,
 .landing-footer__main nav,
 .landing-footer__bottom {
-  color: var(--color-brand-gray);
+  color: var(--color-muted);
 }
 
 .landing-footer__main nav a:hover,
