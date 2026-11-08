@@ -1,8 +1,9 @@
-import { httpClient } from "../../services/api/httpClient";
+import { checkBackendHealth, httpClient } from "../../services/api/httpClient";
 import { getCsrfToken } from "./csrf";
 import type { AuthUser, ChangePasswordRequest, LoginRequest, LoginResponse, RefreshResponse } from "./types";
 
 export async function loginRequest(payload: LoginRequest): Promise<LoginResponse> {
+  await checkBackendHealth();
   const response = await httpClient.post<LoginResponse>("/auth/login", payload, { timeout: 60_000 });
   return response.data;
 }

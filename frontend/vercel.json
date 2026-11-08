@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/health",
+      "destination": "https://gps-control-api-yb.onrender.com/health"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://gps-control-api-yb.onrender.com/api/:path*"
     },

@@ -6,6 +6,7 @@ import type { RefreshResponse } from "../../features/auth/types";
 import { normalizeApiError } from "./apiError";
 
 const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
+const BACKEND_HEALTH_TIMEOUT_MS = 60_000;
 
 export const httpClient = axios.create({
   baseURL,
@@ -13,6 +14,19 @@ export const httpClient = axios.create({
   withCredentials: true,
   headers: { Accept: "application/json" },
 });
+
+export async function checkBackendHealth(): Promise<void> {
+  const apiOrigin = new URL(baseURL, window.location.origin).origin;
+  try {
+    await axios.get(`${apiOrigin}/health`, {
+      timeout: BACKEND_HEALTH_TIMEOUT_MS,
+      withCredentials: false,
+      headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+    });
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
+}
 
 declare module "axios" {
   export interface AxiosRequestConfig { _authRetried?: boolean; skipAuthRefresh?: boolean }
