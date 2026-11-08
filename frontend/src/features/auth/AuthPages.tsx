@@ -1,7 +1,6 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Suspense, lazy } from "react";
 
-import { Card } from "../../components/ui/Card";
 import { useAuth } from "./AuthProvider";
 
 const DashboardPage = lazy(() => import("../dashboard/DashboardPage").then((module) => ({ default: module.DashboardPage })));
@@ -18,24 +17,6 @@ export function AppHomePage() {
       <DashboardPage />
     </Suspense>
   </section>;
-}
-
-export function AdminAccessPage() {
-  return <section className="grid gap-5"><header><p className="eyebrow">Administración</p><h1 className="text-2xl font-bold text-slate-950">Usuarios y roles</h1></header><Card title="Preparado para la siguiente fase"><p className="text-muted">La gestión de usuarios se incorporará en una fase posterior. La autorización de operaciones y datos continúa a cargo del backend.</p></Card></section>;
-}
-
-const moduleContent: Record<string, { title: string; description: string }> = {
-  "/app/vehicles": { title: "Vehículos", description: "La vista de vehículos se incorporará en una fase posterior." },
-  "/app/drivers": { title: "Conductores", description: "La gestión de conductores se incorporará en una fase posterior." },
-  "/app/passengers": { title: "Pasajeros", description: "La gestión de pasajeros se incorporará en una fase posterior." },
-  "/app/history": { title: "Historial de recorridos", description: "La consulta de recorridos se incorporará en una fase posterior." },
-};
-
-export function ModulePlaceholderPage() {
-  const { pathname } = useLocation();
-  const module = moduleContent[pathname];
-  if (!module) return <ForbiddenPage />;
-  return <section className="grid gap-5"><header><p className="eyebrow">Módulo de operación</p><h1 className="text-2xl font-bold text-slate-950">{module.title}</h1></header><Card title="Disponible en una siguiente fase"><p className="text-muted">{module.description} Esta pantalla no muestra información simulada.</p></Card></section>;
 }
 
 export function ForbiddenPage() {

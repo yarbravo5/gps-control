@@ -1,7 +1,7 @@
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-import { AppHomePage, ForbiddenPage, ModulePlaceholderPage } from "../../features/auth/AuthPages";
+import { AppHomePage, ForbiddenPage } from "../../features/auth/AuthPages";
 import { AppShell } from "../../features/auth/AppShell";
 import { ChangePasswordPage } from "../../features/auth/ChangePasswordPage";
 import { LoginPage } from "../../features/auth/LoginPage";
@@ -13,6 +13,7 @@ import { LoadingState } from "../../components/feedback/LoadingState";
 const DriversPage = lazy(() => import("../../features/drivers/DriversPage").then((module) => ({ default: module.DriversPage })));
 const PassengersPage = lazy(() => import("../../features/passengers/PassengersPage").then((module) => ({ default: module.PassengersPage })));
 const VehiclesPage = lazy(() => import("../../features/vehicles/VehiclesPage").then((module) => ({ default: module.VehiclesPage })));
+const HistoryPage = lazy(() => import("../../features/trip-history/HistoryPage").then((module) => ({ default: module.HistoryPage })));
 const AdminUsersPage = lazy(() => import("../../features/admin/AdminUsersPage").then((module) => ({ default: module.AdminUsersPage })));
 const AuditPage = lazy(() => import("../../features/audit/AuditPage").then((module) => ({ default: module.AuditPage })));
 
@@ -29,7 +30,7 @@ export function AppRouter() {
             <Route element={<RequirePermission permission="vehicles:view" />}><Route path="vehicles" element={<Suspense fallback={<LoadingState label="Cargando vehículos" />}><VehiclesPage /></Suspense>} /></Route>
             <Route element={<RequirePermission permission="drivers:view" />}><Route path="drivers" element={<Suspense fallback={<LoadingState label="Cargando conductores" />}><DriversPage /></Suspense>} /></Route>
             <Route element={<RequirePermission permission="passengers:view" />}><Route path="passengers" element={<Suspense fallback={<LoadingState label="Cargando pasajeros" />}><PassengersPage /></Suspense>} /></Route>
-            <Route element={<RequirePermission permission="history:view" />}><Route path="history" element={<ModulePlaceholderPage />} /></Route>
+            <Route element={<RequirePermission permission="history:view" />}><Route path="history" element={<Suspense fallback={<LoadingState label="Cargando historial" />}><HistoryPage /></Suspense>} /></Route>
             <Route element={<RequirePermission permission="users:manage" />}><Route path="admin" element={<Suspense fallback={<LoadingState label="Cargando usuarios" />}><AdminUsersPage /></Suspense>} /></Route>
             <Route element={<RequirePermission permission="audit:view" />}><Route path="audit" element={<Suspense fallback={<LoadingState label="Cargando auditoría" />}><AuditPage /></Suspense>} /></Route>
           </Route>
