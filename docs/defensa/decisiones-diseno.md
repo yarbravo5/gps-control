@@ -8,7 +8,7 @@ Los tokens del tema viven en `frontend/src/styles/globals.css`.
 | --- | --- |
 | `#EB162C` | Identidad de marca y acento de atención en landing. |
 | `#A81A2B` | Vino para énfasis y selección; transmite continuidad con el color de marca con menos brillo. |
-| `#6B6B6B` | Texto secundario y elementos informativos; el texto pequeño usa un tono más oscuro (`#5B5B5B`). |
+| `#6B6B6B` | Gris de marca para texto secundario sobre superficies claras y decoración. No usarlo como texto pequeño encima del fondo lila `#EEE8F2`: su contraste medido es 4.43:1. En esa combinación usar `#5B5B5B` (5.65:1). |
 | `#1E8C93` | Acento frío para foco, enlaces/controles y equilibrio de acciones rojas. |
 | `#EEE8F2` | Superficie suave y fondos de apoyo, no texto pequeño. |
 
@@ -22,7 +22,7 @@ Blanco y fondos gris/lila claro separan superficies. Texto principal oscuro esta
 - **Información/carga:** estados con texto/indicador visible y anuncios accesibles cuando corresponde.
 - **Estado de vehículo:** etiqueta legible además del marcador diferenciado; moving, stopped y no_signal se representan con colores/íconos distintos.
 
-Las reglas CSS combinan clases y colores por feature; cualquier cambio de tono debe repetirse en contraste de estado real. axe automatizado cubrió pantallas registradas en README, pero no certifica navegación manual ni lector de pantalla.
+Las reglas CSS combinan clases y colores por feature; cualquier cambio de tono debe repetirse en contraste de estado real. En el cierre del 8 nov se ejecutó axe en Chromium sobre landing y login locales a 360 × 800: cero violaciones WCAG 2.1 A/AA en esas dos rutas. No se ejecutó lector de pantalla y eso no certifica las demás rutas.
 
 ## Responsive y mapas
 
@@ -43,4 +43,25 @@ La navegación se vuelve drawer; listados operativos se convierten en tarjetas y
 
 ## Mejoras pendientes
 
-Validar credencial Admin de entrega con una rotación privada, probar escrituras con dataset desechable/rollback, revisar CORS y variables efectivas del proveedor, y completar accesibilidad manual. Evaluar logging/observabilidad centralizada y protección de contraseñas comprometidas si el alcance lo permite.
+Validar con el propietario el acceso y permisos de la cuenta Admin real de evaluación; la cuenta compartida en conversación es de prueba y solo debe desactivarse/rotarse si sigue activa. Probar escrituras con dataset desechable/rollback, revisar cuotas/configuración efectiva del proveedor y completar accesibilidad manual. Evaluar logging/observabilidad centralizada y protección de contraseñas comprometidas si el alcance lo permite.
+
+## Decisiones visuales con ejemplos del código
+
+La paleta pedida por la prueba está definida como tokens de tema al inicio de `frontend/src/styles/globals.css`. Mantenerlos en un punto común evita que cada feature invente un rojo distinto. El rojo `#EB162C` es el acento de marca y llama la atención; el vino `#A81A2B` sirve para énfasis y acciones con peso; el gris `#6B6B6B` da una superficie neutra y texto secundario; el teal `#1E8C93` ofrece el acento frío; el lila `#EEE8F2` separa secciones sin usar blanco en toda la página.
+
+El color nunca comunica por sí solo. Los estados de vehículo tienen nombre textual (`moving`, `stopped`, `no_signal`) además de color/ícono. Los errores llevan mensaje y `role=alert`; las cargas usan `role=status`. `TextField.tsx` asocia label, input y error; `ErrorState.tsx` ofrece una acción de reintento; `ToastProvider.tsx` anuncia feedback temporal. El foco visible se estiliza con `:focus-visible` y teal.
+
+Contraste calculado con la fórmula de luminancia relativa WCAG. Es una medición de combinaciones de color, no una certificación de todas las pantallas:
+
+| Primer plano | Fondo | Ratio aproximado | Lectura |
+|---|---|---:|---|
+| `#6B6B6B` | `#EEE8F2` | 4.43:1 | No llega a 4.5:1 para texto normal; se corrigió en las superficies de landing que lo necesitaban. |
+| `#5B5B5B` | `#EEE8F2` | 5.65:1 | Supera AA para texto normal. |
+| `#6B6B6B` | `#FFFFFF` | 5.33:1 | Supera AA para texto normal. |
+| `#A81A2B` | `#EEE8F2` | 6.13:1 | Supera AA para texto normal. |
+| `#1E8C93` | `#FFFFFF` | 4.02:1 | No usar como texto pequeño sin combinarlo con otro tratamiento; sí puede servir como indicador no textual. |
+| `#17151A` | `#EEE8F2` | 15.07:1 | Alto contraste para texto principal. |
+
+Mobile-first significa que la estructura funciona en una pantalla estrecha y luego se amplía con media queries. En landing, el menú móvil usa `details/summary`, tarjetas y CTA se apilan en CSS; en el mapa, Leaflet ocupa el contenedor y el clustering evita saturarlo. En las tablas protegidas, revisar tarjetas y formularios en móvil: una captura sola no certifica las interacciones.
+
+Para explicarlo en defensa: “Los colores tienen papeles semánticos, pero el texto necesita contraste medible. Gris de marca sobre lila daba 4.43:1, justo debajo de AA; oscurecimos ese texto a `#5B5B5B`, manteniendo la paleta. Repetimos axe en landing y login móvil”. Limitar esta afirmación a las dos rutas verificadas.

@@ -79,9 +79,9 @@ Roles disponibles:
 - Lighthouse historico de landing mobile: 96/96/96 a 360x800, ejecutado el 8 nov 2026.
 - Una revision anterior de Playwright cubrio siete vistas protegidas a 390/768/1440 px. En este cierre axe y teclado en landing/login local a 360 px: cero violaciones WCAG 2.1 A/AA, cero overflow y foco visible. No se uso lector de pantalla; vistas autenticadas requieren pase manual.
 - Evidencia de produccion del 8 nov: Admin/login, refresh/logout, dashboard, vehiculos, recursos, conductores, pasajeros, usuarios y auditoria respondieron correctamente; mapa con 62 unidades y 61 posiciones. No hubo mutaciones Wialon. Esta es evidencia historica, no una nueva sesion de esta auditoria.
-- Render /version confirmo revision 9eec7800cc6dd7204be1dadde9d03f8c59e60399 en main; /health y proxy Vercel respondieron 200. El endpoint /api/v1/auth/me sin sesion devuelve 401, esperado; no prueba por si solo una revision.
+- Render /version confirmo revision f0baa41facc1592950839db192db217d7f4e9c99 en main; /health y proxy Vercel respondieron 200. El endpoint /api/v1/auth/me sin sesion devuelve 401, esperado; no prueba por si solo una revision.
 - Suites locales de cierre: backend 138 tests, frontend 69; frontend typecheck/build correcto. No se recalculo cobertura backend. La verificacion final de pip-audit y Docker Compose corresponde al CI del commit final. Docker no esta instalado localmente.
-- GitHub Actions para el commit 9eec780: backend, frontend y docker-compose completaron con conclusion success. Repo publico respondio HTTP 200.
+- GitHub Actions para el commit f0baa41: backend, frontend y docker-compose completaron con conclusion success. Repo publico respondio HTTP 200.
 - El plan gratuito de Render puede despertar lentamente; el workflow keep-alive reduce cold starts pero no garantiza disponibilidad.
 
 ### Evidencia Lighthouse móvil — landing a 360 px
@@ -193,7 +193,7 @@ Las rutas frontend separan vistas por feature, y [`httpClient.ts`](frontend/src/
 | SEG-04 Diseño inseguro | Amenazas y mitigaciones resumidas en la tabla anterior; permisos de mínimo privilegio. |
 | SEG-05 Configuración | CSP, HSTS, X-Content-Type-Options, X-Frame-Options y políticas de Referrer; Swagger deshabilitado en producción. |
 | SEG-06 Componentes | Lockfiles versionados; `npm audit --offline --audit-level=high` reportó cero vulnerabilidades en esta revisión local. CI ejecuta `npm audit --audit-level=high` y `pip-audit` en cada push a `main`. |
-| SEG-07 Identidad | Límite de login compartido por identidad/origen y bloqueo temporal; contraseñas nuevas con mínimo 12 caracteres, una letra y un número; sesión rotatoria y CSRF. No hay rate limiting global ni consulta a una lista de contraseñas comprometidas. Rota la credencial Admin compartida antes de entregarla. |
+| SEG-07 Identidad | Límite de login compartido por identidad/origen y bloqueo temporal; contraseñas nuevas con mínimo 12 caracteres, una letra y un número; sesión rotatoria y CSRF. No hay rate limiting global ni consulta a una lista de contraseñas comprometidas. La cuenta de prueba compartida debe desactivarse o rotarse si sigue activa; la cuenta real de evaluación es distinta y el propietario debe validar sus credenciales antes de compartirlas. |
 | SEG-08 Integridad | Dependencias fijadas, CI, DTOs de Wialon validados y mapeo a contratos propios. |
 | SEG-09 Registro | Auditoría de operaciones y fallos de login; denegaciones de permiso registradas sin token, contraseña ni IP. |
 | SEG-10 Excepciones/SSRF | Host Wialon proviene de configuración; respuestas de error no exponen stack traces ni datos internos. |
@@ -352,7 +352,7 @@ El procedimiento de revisión de credenciales está documentado en [docs/securit
 - Los logs del backend se emiten como JSON con hora UTC, nivel, logger y mensaje, sin serializar tokens, cookies ni cuerpos de petición.
 - Access tokens JWT de corta duracion.
 - Refresh tokens rotativos almacenados como hash en base de datos.
-- Cookies `HttpOnly` para refresh y CSRF.
+- Cookie de refresh `HttpOnly`; cookie CSRF legible por el cliente para copiar su valor a `X-CSRF-Token`. Ambas usan `Secure` en producción y `SameSite` configurable.
 - Validacion CSRF en refresh, logout y cambio de sesion.
 - Bloqueo temporal de cuenta tras intentos fallidos.
 - Rate limiting compartido en base de datos para el login, con claves HMAC y cabeceras reenviadas ignoradas salvo proxies explícitamente confiables.
@@ -477,16 +477,17 @@ El plan gratuito de Render suspende el servicio tras un periodo de inactividad. 
 - Supuestos, límites y decisiones de alcance: [docs/defensa/decisiones-diseno.md](docs/defensa/decisiones-diseno.md).
 - Revisión requisito por requisito: [docs/entrega/auditoria-final.md](docs/entrega/auditoria-final.md).
 - Guía de recorrido del código y preparación para la defensa: [docs/defensa/guia-completa-repositorio.md](docs/defensa/guia-completa-repositorio.md) y [docs/defensa/guion-defensa-tecnica.md](docs/defensa/guion-defensa-tecnica.md).
+- Material de estudio progresivo de ocho bloques: [docs/defensa/plan-de-estudio.md](docs/defensa/plan-de-estudio.md). También hay [preguntas y respuestas](docs/defensa/preguntas-y-respuestas.md), [stack tecnológico explicado](docs/defensa/stack-tecnologico.md) y [historial Git explicado](docs/defensa/historial-git-explicado.md).
 
 ## Uso de inteligencia artificial
 
-Se utilizaron OpenAI ChatGPT y Codex como asistentes durante el desarrollo para diagnóstico, revisión de código, implementación puntual, redacción de pruebas y documentación. El autor revisó y validó los cambios, ejecutó las pruebas y tomó las decisiones finales de arquitectura y alcance.
+Este README declara el uso de OpenAI ChatGPT y Codex como asistentes para orientación, diagnóstico, revisión, implementación puntual, pruebas y documentación. Esta declaración no atribuye líneas o decisiones personales específicas que no estén registradas. El desarrollador debe validar el contenido, entender el código que presente y corregir el disclosure si también utilizó GitHub Copilot, OpenCode u otra herramienta.
 
 Pautas aplicadas:
 
-- La IA no se uso para generar ni almacenar secretos.
+- No se documenta que la IA haya generado o almacenado secretos.
 - El token de Wialon se configuro manualmente en variables de entorno, nunca en el repositorio.
-- Las respuestas de la IA se contrastaron con el codigo y con pruebas ejecutables.
+- El desarrollador debe contrastar las sugerencias con el código y pruebas antes de defenderlas.
 - Las limitaciones y el alcance pendiente se documentan de forma explicita.
 
 ## Estado del proyecto

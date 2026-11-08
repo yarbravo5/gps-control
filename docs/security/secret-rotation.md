@@ -2,16 +2,17 @@
 
 ## Current state
 
-The evaluation Admin password was shared in a conversation and must be treated as compromised. Do not reuse or send it. No production credential was read or changed in this audit. The owner previously confirmed the Wialon token was supplied by GPS Control and was not published; this audit did not inspect or rotate it.
+The account shared earlier was a test Admin account. The owner clarified that the real evaluation Admin account has different credentials and they were not shared in the conversation. Do not label the real account compromised and do not change its password automatically. This audit did not read or change any production credential. If the shared test account remains active, the owner should disable or rotate it from an authorized session.
 
-## Rotate Admin access without lockout
+## Verify the real evaluation Admin account
 
-1. Over HTTPS, while signed in to the existing Admin account, create a second Admin backup account. Use a unique temporary password with at least 12 characters, a letter and a number. Require password change at first sign-in. Never place the password in this document, repository, screenshot or shell history.
-2. Sign out and sign in with the backup account. Complete the required password change. Confirm the account role and that Administration is accessible.
-3. While keeping the backup account available, sign in to the primary Admin account and change its password in the application. Password change revokes sessions; sign in again with the new password and confirm Admin access. If that fails, recover through the backup account.
-4. With Admin, create a temporary non-admin user and verify first-login password change. Sign in as that user and confirm the forced change before using the app. Verify Viewer/Operator cannot perform an Admin-only action. Then deactivate or remove the temporary user.
-5. Send only the newly verified evaluation credential over a private channel. Keep the backup Admin until evaluation is complete.
-6. Changing ADMIN_PASSWORD in hosting settings does not update an already-created database user; it is not the rotation mechanism for an existing account.
+1. From the owner's secure device and network, open the production URL and sign in with the real evaluation Admin credentials. Never enter them into this agent, a shell command, a screenshot or a repository file.
+2. Confirm the account can open user administration and has permission to create users. The owner can inspect the current user profile and role without sharing the password.
+3. Create a temporary non-admin test user with a unique 12+ character password that meets the letter/number policy and mandatory first-login change. Deliver that temporary password only to the tester through a private channel.
+4. Sign in with the test user, confirm the forced password-change page, then verify the permitted Viewer/Operator actions and that an Admin-only action is denied. Remove or deactivate this test user after the check.
+5. If a password rotation of the real account is desired, first create and verify a second Admin account as backup, then rotate the primary through the application, sign in again and confirm the role. Do this only on the owner's instruction; the real account is not known to be compromised.
+6. If the earlier shared test Admin account is still active, disable it or rotate it from an authorized Admin session. Do not use it as the evaluator account.
+7. Changing ADMIN_PASSWORD in hosting settings does not update an already-created database user; it is not a rotation method for an existing account.
 
 ## Other provider credentials
 
@@ -21,4 +22,4 @@ The evaluation Admin password was shared in a conversation and must be treated a
 
 ## Verification
 
-After a rotation, verify health, database connection/migrations, Admin login, refresh and logout. Do not record rotation as complete without owner confirmation and service verification. Do not rotate the Wialon token as part of this audit.
+After the owner verifies access, confirm health, database-backed Admin login, refresh/logout, user creation, forced first-login password change and role denials. Do not record account validation as complete without owner confirmation. Do not rotate the Wialon token as part of this audit.
