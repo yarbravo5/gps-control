@@ -18,6 +18,7 @@ dist/
 *.tsbuildinfo
 
 # Tests and coverage
+.coverage
 coverage/
 htmlcov/
 playwright-report/
