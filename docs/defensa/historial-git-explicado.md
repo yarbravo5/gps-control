@@ -2,7 +2,7 @@
 
 ## Alcance de la revisión
 
-El estado comprobado el 8 de noviembre de 2026 es `f0baa41` en `main`, igual a `origin/main`; el árbol de trabajo estaba limpio. El historial muestra commits incrementales desde la inicialización y mensajes Conventional Commits. Un log visible demuestra el estado actual del grafo, pero no permite probar por sí solo que nunca hubo force-push en el pasado.
+El estado comprobado el 8 de noviembre de 2026 es `381d619` en `main`, igual a `origin/main`; el árbol de trabajo estaba limpio. El historial muestra commits incrementales desde la inicialización y mensajes Conventional Commits. Un log visible demuestra el estado actual del grafo, pero no permite probar por sí solo que nunca hubo force-push en el pasado.
 
 ## Hitos
 
@@ -22,6 +22,7 @@ El estado comprobado el 8 de noviembre de 2026 es `f0baa41` en `main`, igual a `
 | `a01f383` | Auditoría y paquete de defensa | Consolida matriz, checklist y documentos de cierre. |
 | `9eec780` | Contraste/nombres accesibles en landing y endpoint `/version` | Corrige hallazgos automatizados y permite identificar SHA de Render mediante metadatos no secretos. |
 | `f0baa41` | Verificación final de despliegue y cifras | Actualiza documentos tras confirmar el SHA, CI y endpoints; no altera datos operativos. |
+| `381d619` | Documentación de cierre y defensa | Añade el plan de estudio, amplía las guías y corrige los documentos de entrega; CI y despliegue se comprobaron después de publicar. |
 
 > Nota: el identificador de commit exacto es la fuente para navegar el cambio. El historial también contiene merge commits de ramas de funciones y commits de documentación/corrección posteriores; no se infiere la existencia de PRs a partir de ellos.
 

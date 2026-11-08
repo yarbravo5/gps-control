@@ -89,7 +89,7 @@ Los tokens de refresh se guardan como hashes en SQL; access token JWT corto va e
 - Backend: desde `backend`, `.venv/Scripts/python.exe -m pytest tests -q` en Windows o `python -m pytest tests -q` en entorno activado. Hay tests unitarios de servicios/mappers/gateway y tests HTTP con TestClient. Los gateways falsos no conectan a Wialon real.
 - Frontend: desde `frontend`, `npm test`, `npm run typecheck`, `npm run build`. Vitest/Testing Library prueban comportamientos de componentes y requests simulados.
 - Docker Compose: GitHub Actions valida y arranca el conjunto; Docker CLI no estuvo disponible en la máquina de la auditoría.
-- Último resultado confirmado: backend 138 tests; frontend 69 tests; CI de `f0baa41` con jobs backend, frontend y docker-compose en success.
+- Último resultado confirmado: backend 138 tests; frontend 69 tests; CI de `381d619` con jobs backend, frontend y docker-compose en success.
 - Comprobación de despliegue: Render `/version` devolvió SHA completo de `main`; Vercel/Render y proxy health 200; `/auth/me` sin sesión dio 401 esperado. No se hizo login de la cuenta real, no se leyeron secretos y no se escribieron datos Wialon.
 
 ### Recorrido recomendado para entenderlo

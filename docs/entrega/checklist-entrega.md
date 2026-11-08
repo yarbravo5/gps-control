@@ -8,7 +8,7 @@
 - [x] `.env.example`, `.gitignore`, lockfiles, Dockerfile, Compose y CI.
 - [x] No se hicieron escrituras Wialon ni se guardaron secretos de producción en documentos nuevos.
 - [x] Contraseñas nuevas/cambiadas exigen 12 caracteres, letra y número.
-- [x] Render `/version` identificó `f0baa41` en `main`; health Render/Vercel 200 y CI backend/frontend/docker-compose exitoso para ese SHA.
+- [x] Render `/version` identificó `381d6199ceccbac8a583ce0dc4cf47092ceac92a` en `main`; health Render/Vercel 200 y CI backend/frontend/docker-compose exitoso para ese SHA.
 - [x] Landing y login locales a 360 px pasan axe WCAG 2.1 A/AA; teclado y foco inspeccionados. No se usó lector de pantalla.
 
 ## Antes de enviar el correo — acciones del propietario
