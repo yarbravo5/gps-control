@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { httpClient } from "../src/services/api/httpClient";
+import { ToastProvider } from "../src/components/feedback/ToastProvider";
 import { AdminUsersPage } from "../src/features/admin/AdminUsersPage";
 import { AuditPage } from "../src/features/audit/AuditPage";
 import type { ManagedUser } from "../src/features/admin/adminApi";
@@ -28,7 +29,7 @@ const managedUser: ManagedUser = {
 
 function renderPage(page: React.ReactNode) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={queryClient}>{page}</QueryClientProvider>);
+  return render(<ToastProvider><QueryClientProvider client={queryClient}>{page}</QueryClientProvider></ToastProvider>);
 }
 
 describe("páginas de administración", () => {

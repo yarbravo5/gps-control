@@ -300,6 +300,7 @@ function SelectedVehicle({
       {detail && detail.passengers.length === 0 ? <p className="text-sm text-muted">No hay pasajeros vinculados a este vehículo.</p> : null}
       {detail && canEditCustomFields ? (
         <VehicleCustomFields
+          key={detail.id}
           fields={detail.custom_fields}
           onSaved={onCustomFieldsSaved}
           vehicleId={detail.id}

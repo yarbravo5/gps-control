@@ -4,6 +4,7 @@ import { useState } from "react";
 import { EmptyState } from "../../components/feedback/EmptyState";
 import { ErrorState } from "../../components/feedback/ErrorState";
 import { LoadingState } from "../../components/feedback/LoadingState";
+import { useToast } from "../../components/feedback/ToastProvider";
 import { TextField } from "../../components/ui/TextField";
 import { SortSelect } from "../../components/ui/SortSelect";
 import { ApiError } from "../../services/api/apiError";
@@ -37,6 +38,7 @@ const emptyPassengerForm: PassengerFormValues = {
 
 export function PassengersPage() {
   const { hasPermission } = useAuth();
+  const notify = useToast();
   const queryClient = useQueryClient();
   const canWrite = hasPermission("passengers:write");
   const canBind = hasPermission("passengers:bind");
@@ -51,7 +53,6 @@ export function PassengersPage() {
   const [form, setForm] = useState<PassengerFormValues>(emptyPassengerForm);
   const [removedFields, setRemovedFields] = useState<string[]>([]);
   const [pendingDelete, setPendingDelete] = useState<Passenger | null>(null);
-  const [successMessage, setSuccessMessage] = useState("");
   const resourcesQuery = useQuery({ queryKey: ["wialon-resources"], queryFn: listAllResources });
   const resources = resourcesQuery.data ?? [];
   const selectedResourceId = resourceId ?? resources[0]?.id ?? null;
@@ -71,7 +72,7 @@ export function PassengersPage() {
       setFormOpen(false);
       setEditingPassenger(null);
       setRemovedFields([]);
-      setSuccessMessage(editingPassenger ? "Pasajero actualizado." : "Pasajero creado.");
+      notify(editingPassenger ? "Pasajero actualizado." : "Pasajero creado.");
     },
   });
   const deleteMutation = useMutation({
@@ -79,7 +80,7 @@ export function PassengersPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["passengers"] });
       setPendingDelete(null);
-      setSuccessMessage("Pasajero eliminado.");
+      notify("Pasajero eliminado.");
     },
   });
   const vehiclesQuery = useQuery({
@@ -97,7 +98,7 @@ export function PassengersPage() {
         queryClient.invalidateQueries({ queryKey: ["vehicle-map"] }),
         queryClient.invalidateQueries({ queryKey: ["vehicle-detail"] }),
       ]);
-      setSuccessMessage("Vinculación actualizada.");
+      notify("Vinculación actualizada.");
     },
   });
   const vehicles = vehiclesQuery.data ?? [];
@@ -112,7 +113,6 @@ export function PassengersPage() {
     setEditingPassenger(null);
     setForm(emptyPassengerForm);
     setRemovedFields([]);
-    setSuccessMessage("");
     setFormOpen(true);
   };
 
@@ -126,7 +126,6 @@ export function PassengersPage() {
       custom_fields: { ...passenger.custom_fields },
     });
     setRemovedFields([]);
-    setSuccessMessage("");
     setFormOpen(true);
   };
 
@@ -141,7 +140,6 @@ export function PassengersPage() {
       custom_fields: form.custom_fields,
       ...(removedFields.length ? { remove_custom_fields: removedFields } : {}),
     };
-    setSuccessMessage("");
     saveMutation.mutate({ selectedResourceId, passengerId: editingPassenger?.id ?? null, payload });
   };
 
@@ -157,7 +155,6 @@ export function PassengersPage() {
       {selectedResourceId !== null ? (
         <>
           {canWrite ? <div className="flex flex-wrap items-center justify-between gap-3">
-            <p aria-live="polite" className="text-sm text-teal-900" role="status">{successMessage}</p>
             <button className="button-primary min-h-11 rounded-control px-4 text-sm font-semibold" onClick={openCreateForm} type="button">Nuevo pasajero</button>
           </div> : null}
           {canExport ? <ExportCsvButton kind="passengers" /> : null}
@@ -221,7 +218,7 @@ export function PassengersPage() {
                   /> : null}
                   {canWrite ? <div className="flex gap-2">
                     <button aria-label={`Editar ${passenger.name}`} className="text-sm font-semibold text-teal-900 underline" onClick={() => openEditForm(passenger)} type="button">Editar</button>
-                    <button aria-label={`Eliminar ${passenger.name}`} className="text-sm font-semibold text-wine-dark underline" onClick={() => { setPendingDelete(passenger); setSuccessMessage(""); deleteMutation.reset(); }} type="button">Eliminar</button>
+                    <button aria-label={`Eliminar ${passenger.name}`} className="text-sm font-semibold text-wine-dark underline" onClick={() => { setPendingDelete(passenger); deleteMutation.reset(); }} type="button">Eliminar</button>
                   </div> : null}
                 </article>
               </li>)}

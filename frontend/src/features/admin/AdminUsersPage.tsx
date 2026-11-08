@@ -4,6 +4,7 @@ import { useState } from "react";
 import { EmptyState } from "../../components/feedback/EmptyState";
 import { ErrorState } from "../../components/feedback/ErrorState";
 import { LoadingState } from "../../components/feedback/LoadingState";
+import { useToast } from "../../components/feedback/ToastProvider";
 import { TextField } from "../../components/ui/TextField";
 import { SortSelect } from "../../components/ui/SortSelect";
 import { ApiError } from "../../services/api/apiError";
@@ -20,6 +21,7 @@ type FormMode = "create" | "edit" | "reset";
 
 export function AdminUsersPage() {
   const queryClient = useQueryClient();
+  const notify = useToast();
   const [offset, setOffset] = useState(0);
   const [sort, setSort] = useState("id:asc");
   const [searchInput, setSearchInput] = useState("");
@@ -32,7 +34,6 @@ export function AdminUsersPage() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<AdminRole>("viewer");
   const [isActive, setIsActive] = useState(true);
-  const [success, setSuccess] = useState("");
   const [formValidationError, setFormValidationError] = useState("");
   const usersQuery = useQuery({
     queryKey: ["managed-users", offset, sort, query, roleFilter],
@@ -44,7 +45,7 @@ export function AdminUsersPage() {
     await queryClient.invalidateQueries({ queryKey: ["managed-users"] });
     setMode(null);
     setSelectedUser(null);
-    setSuccess(message);
+    notify(message);
   };
   const createMutation = useMutation({
     mutationFn: (payload: CreateUserPayload) => createUser(payload),
@@ -66,7 +67,6 @@ export function AdminUsersPage() {
     setPassword("");
     setRole("viewer");
     setIsActive(true);
-    setSuccess("");
     setFormValidationError("");
     setMode("create");
   };
@@ -76,14 +76,12 @@ export function AdminUsersPage() {
     setName(user.name);
     setRole(user.role);
     setIsActive(user.is_active);
-    setSuccess("");
     setMode("edit");
   };
 
   const openReset = (user: ManagedUser) => {
     setSelectedUser(user);
     setPassword("");
-    setSuccess("");
     setMode("reset");
   };
 
@@ -122,7 +120,6 @@ export function AdminUsersPage() {
         <div><p className="eyebrow">Administración</p><h1 className="text-2xl font-bold text-slate-950" id="admin-users-title">Usuarios y roles</h1></div>
         <button className="button-primary min-h-11 rounded-control px-4 text-sm font-semibold" onClick={openCreate} type="button">Crear usuario</button>
       </header>
-      {success ? <p aria-live="polite" className="text-sm text-teal-900" role="status">{success}</p> : null}
       <form className="grid min-w-0 gap-3 rounded-card border border-slate-200 bg-white p-4 sm:grid-cols-[minmax(12rem,1fr)_12rem_auto] sm:items-end" onSubmit={(event) => { event.preventDefault(); setQuery(searchInput.trim()); setOffset(0); }}>
         <TextField label="Buscar usuario" onChange={(event) => setSearchInput(event.target.value)} placeholder="Nombre o correo" value={searchInput} />
         <label className="grid min-w-0 gap-1.5 text-sm font-medium text-slate-800">Filtrar por rol

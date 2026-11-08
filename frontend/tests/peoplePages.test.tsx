@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { httpClient } from "../src/services/api/httpClient";
+import { ToastProvider } from "../src/components/feedback/ToastProvider";
 import { DriversPage } from "../src/features/drivers/DriversPage";
 import { PassengersPage } from "../src/features/passengers/PassengersPage";
 
@@ -23,7 +24,7 @@ const deleteApi = vi.mocked(httpClient.delete);
 
 function renderPage(page: React.ReactNode) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={queryClient}>{page}</QueryClientProvider>);
+  return render(<ToastProvider><QueryClientProvider client={queryClient}>{page}</QueryClientProvider></ToastProvider>);
 }
 
 const resources = { data: { items: [{ id: 20, name: "Flota Norte" }], total: 1, offset: 0, limit: 100 } };

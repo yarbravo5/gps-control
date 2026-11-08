@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "../src/services/api/apiError";
 import { httpClient } from "../src/services/api/httpClient";
+import { ToastProvider } from "../src/components/feedback/ToastProvider";
 import { getVehiclePollingInterval, VehiclesPage } from "../src/features/vehicles/VehiclesPage";
 import { listAllVehicles } from "../src/features/vehicles/vehiclesApi";
 import type { Vehicle, VehiclePage } from "../src/features/vehicles/vehiclesApi";
@@ -50,7 +51,7 @@ function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(<QueryClientProvider client={queryClient}><VehiclesPage /></QueryClientProvider>);
+  return render(<ToastProvider><QueryClientProvider client={queryClient}><VehiclesPage /></QueryClientProvider></ToastProvider>);
 }
 
 function page(items: VehiclePage["items"], total = items.length, offset = 0): VehiclePage {

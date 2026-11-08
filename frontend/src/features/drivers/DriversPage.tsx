@@ -4,6 +4,7 @@ import { useState } from "react";
 import { EmptyState } from "../../components/feedback/EmptyState";
 import { ErrorState } from "../../components/feedback/ErrorState";
 import { LoadingState } from "../../components/feedback/LoadingState";
+import { useToast } from "../../components/feedback/ToastProvider";
 import { TextField } from "../../components/ui/TextField";
 import { SortSelect } from "../../components/ui/SortSelect";
 import { ApiError } from "../../services/api/apiError";
@@ -39,6 +40,7 @@ const emptyDriverForm: DriverFormValues = {
 
 export function DriversPage() {
   const { hasPermission } = useAuth();
+  const notify = useToast();
   const queryClient = useQueryClient();
   const canWrite = hasPermission("drivers:write");
   const canBind = hasPermission("drivers:bind");
@@ -53,7 +55,6 @@ export function DriversPage() {
   const [form, setForm] = useState<DriverFormValues>(emptyDriverForm);
   const [removedFields, setRemovedFields] = useState<string[]>([]);
   const [pendingDelete, setPendingDelete] = useState<Driver | null>(null);
-  const [successMessage, setSuccessMessage] = useState("");
   const resourcesQuery = useQuery({ queryKey: ["wialon-resources"], queryFn: listAllResources });
   const resources = resourcesQuery.data ?? [];
   const selectedResourceId = resourceId ?? resources[0]?.id ?? null;
@@ -73,7 +74,7 @@ export function DriversPage() {
       setFormOpen(false);
       setEditingDriver(null);
       setRemovedFields([]);
-      setSuccessMessage(editingDriver ? "Conductor actualizado." : "Conductor creado.");
+      notify(editingDriver ? "Conductor actualizado." : "Conductor creado.");
     },
   });
   const deleteMutation = useMutation({
@@ -81,7 +82,7 @@ export function DriversPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["drivers"] });
       setPendingDelete(null);
-      setSuccessMessage("Conductor eliminado.");
+      notify("Conductor eliminado.");
     },
   });
   const vehiclesQuery = useQuery({
@@ -99,7 +100,7 @@ export function DriversPage() {
         queryClient.invalidateQueries({ queryKey: ["vehicle-map"] }),
         queryClient.invalidateQueries({ queryKey: ["vehicle-detail"] }),
       ]);
-      setSuccessMessage("Vinculación actualizada.");
+      notify("Vinculación actualizada.");
     },
   });
   const vehicles = vehiclesQuery.data ?? [];
@@ -114,7 +115,6 @@ export function DriversPage() {
     setEditingDriver(null);
     setForm(emptyDriverForm);
     setRemovedFields([]);
-    setSuccessMessage("");
     setFormOpen(true);
   };
 
@@ -129,7 +129,6 @@ export function DriversPage() {
       custom_fields: { ...driver.custom_fields },
     });
     setRemovedFields([]);
-    setSuccessMessage("");
     setFormOpen(true);
   };
 
@@ -145,7 +144,6 @@ export function DriversPage() {
       ...(form.mobile_password ? { mobile_password: form.mobile_password } : {}),
       ...(removedFields.length ? { remove_custom_fields: removedFields } : {}),
     };
-    setSuccessMessage("");
     saveMutation.mutate({ selectedResourceId, driverId: editingDriver?.id ?? null, payload });
   };
 
@@ -161,7 +159,6 @@ export function DriversPage() {
       {selectedResourceId !== null ? (
         <>
           {canWrite ? <div className="flex flex-wrap items-center justify-between gap-3">
-            <p aria-live="polite" className="text-sm text-teal-900" role="status">{successMessage}</p>
             <button className="button-primary min-h-11 rounded-control px-4 text-sm font-semibold" onClick={openCreateForm} type="button">Nuevo conductor</button>
           </div> : null}
           {canExport ? <ExportCsvButton kind="drivers" /> : null}
@@ -227,7 +224,7 @@ export function DriversPage() {
                   /> : null}
                   {canWrite ? <div className="flex gap-2">
                     <button aria-label={`Editar ${driver.name}`} className="text-sm font-semibold text-teal-900 underline" onClick={() => openEditForm(driver)} type="button">Editar</button>
-                    <button aria-label={`Eliminar ${driver.name}`} className="text-sm font-semibold text-wine-dark underline" onClick={() => { setPendingDelete(driver); setSuccessMessage(""); deleteMutation.reset(); }} type="button">Eliminar</button>
+                    <button aria-label={`Eliminar ${driver.name}`} className="text-sm font-semibold text-wine-dark underline" onClick={() => { setPendingDelete(driver); deleteMutation.reset(); }} type="button">Eliminar</button>
                   </div> : null}
                 </article>
               </li>)}

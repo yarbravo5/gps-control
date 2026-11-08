@@ -3,6 +3,7 @@ import type { PropsWithChildren } from "react";
 
 import { ApiError } from "../../services/api/apiError";
 import { AuthProvider } from "../../features/auth/AuthProvider";
+import { ToastProvider } from "../../components/feedback/ToastProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,5 +22,5 @@ const queryClient = new QueryClient({
 });
 
 export function AppProviders({ children }: PropsWithChildren) {
-  return <QueryClientProvider client={queryClient}><AuthProvider>{children}</AuthProvider></QueryClientProvider>;
+  return <ToastProvider><QueryClientProvider client={queryClient}><AuthProvider>{children}</AuthProvider></QueryClientProvider></ToastProvider>;
 }
