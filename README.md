@@ -123,9 +123,48 @@ Neon PostgreSQL
 Render tambien consulta la API de Wialon por HTTPS.
 ```
 
-El frontend se sirve desde Vercel y reescribe `/api/*` hacia Render. Esto mantiene frontend y API bajo el mismo origen, permite cookies `SameSite=lax` y evita problemas de cookies cruzadas entre `*.vercel.app` y `*.onrender.com`.
+El frontend se sirve desde Vercel y reescribe `/api/*` y `/health` hacia Render. Esto mantiene frontend y API bajo el mismo origen, permite cookies `SameSite=lax` y evita problemas de cookies cruzadas entre `*.vercel.app` y `*.onrender.com`. Antes de enviar credenciales, el login consulta `/health` con un timeout ampliado para dar tiempo al plan gratuito de Render a despertar.
 
 En desarrollo local, el frontend usa `VITE_API_URL=http://localhost:8000/api/v1` y el backend permite CORS desde `http://localhost:5173`.
+
+## Modelo de datos
+
+```mermaid
+erDiagram
+    ROLES ||--o{ USERS : asigna
+    ROLES ||--o{ ROLE_PERMISSIONS : incluye
+    PERMISSIONS ||--o{ ROLE_PERMISSIONS : concede
+    USERS ||--o{ REFRESH_TOKENS : mantiene
+    USERS o|--o{ AUDIT_LOGS : realiza
+```
+
+`users.role_id` asigna un rol; `role_permissions` materializa la relación muchos a muchos entre roles y permisos. Las sesiones refresh pertenecen a un usuario y se revocan o expiran. Los registros de auditoría conservan su evento aunque el usuario se elimine (`user_id` nullable).
+
+## Arquitectura y patrones (ARQ-01 a ARQ-03, ARQ-08)
+
+- **Responsabilidad única y capas:** `backend/app/api/v1/auth.py` adapta HTTP; `backend/app/services/auth_service.py` aplica reglas de autenticación; `backend/app/repositories/user_repository.py` consulta usuarios. La UI de cada feature está separada del cliente común `frontend/src/services/api/httpClient.ts`.
+- **Open/Closed y sustitución de dependencias:** los servicios de `backend/app/services/` reciben dependencias (por ejemplo, gateway Wialon) a través de funciones de `backend/app/api/v1/vehicles.py`, por lo que se pueden reemplazar en pruebas sin cambiar las reglas de negocio.
+- **Segregación de interfaces e inversión de dependencias:** protocolos como `DashboardGateway` (`backend/app/services/dashboard_service.py`) describen solo operaciones necesarias; el adaptador real `WialonClient` está en `backend/app/gateways/wialon/client.py`.
+- **Repository:** `user_repository.py` concentra consultas SQLAlchemy para usuarios y roles.
+- **Adapter/Gateway:** `WialonClient` encapsula HTTP, sesión y errores del proveedor.
+- **DTO/Mapper:** `backend/app/gateways/wialon/dto.py` y `backend/app/mappers/vehicle_mapper.py` convierten respuestas externas a contratos propios.
+- **Inyección de dependencias:** FastAPI `Depends` conecta sesiones y gateways con endpoints; facilita pruebas con sustitutos.
+- **Strategy:** los protocolos por caso de uso (p. ej. `DashboardGateway`) permiten seleccionar implementaciones compatibles; no se agrega una fábrica donde no existe una necesidad real.
+
+## Modelo de amenazas (SEG-04)
+
+| Amenaza | Control implementado |
+| --- | --- |
+| Usuario sin permiso accede a datos o acciones administrativas | Dependencias de autorización por endpoint y permisos en backend; las rutas frontend también se protegen. |
+| Robo o repetición de sesión | Access JWT de corta duración, refresh rotativo revocable, cookies HttpOnly/Secure y protección CSRF. |
+| Inyección por entradas, SQL o exportaciones | Esquemas Pydantic, ORM parametrizado y neutralización de fórmulas CSV. |
+| Exposición de tokens Wialon | Secretos fuera del repositorio y del frontend; configuración `SecretStr`; sanitización de errores. |
+| Ataques al navegador o carga de contenido | CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options` y `Referrer-Policy` configurados en el despliegue. |
+| Fuerza bruta de contraseñas | Bloqueo temporal tras fallos consecutivos; no hay limitador global de solicitudes. |
+
+## Identidad visual y accesibilidad
+
+La paleta central está definida en `frontend/src/styles/globals.css`: rojo `#eb162c` para marca, rojo oscuro `#d51429` y vino `#a81a2b` para acciones/énfasis, gris `#6b6b6b` para secundarios, teal `#1e8c93` para foco y acentos, púrpura pálido `#eee8f2` para fondos y vino oscuro `#751324` para texto destacado. Los fondos claros usan texto oscuro. El cumplimiento de contraste WCAG debe medirse sobre los estados renderizados antes de declararlo; los colores de marca por sí solos no constituyen evidencia de conformidad.
 
 ## Estructura del repositorio
 
@@ -272,7 +311,7 @@ Limitaciones de seguridad conocidas:
 
 ## API
 
-La API se publica bajo `/api/v1`.
+La API se publica bajo `/api/v1`. El enlace Swagger de entrega solo está disponible si el ambiente permite OpenAPI; en producción puede estar deshabilitado por configuración.
 
 | Metodo | Ruta | Descripcion |
 | --- | --- | --- |
