@@ -7,9 +7,9 @@ import { ChangePasswordPage } from "../../features/auth/ChangePasswordPage";
 import { LoginPage } from "../../features/auth/LoginPage";
 import { PublicOnly, RequireAuth, RequirePermission } from "../../features/auth/RouteGuards";
 import { NotFoundPage } from "../../features/foundation/NotFoundPage";
-import { LandingPage } from "../../features/landing/LandingPage";
 import { LoadingState } from "../../components/feedback/LoadingState";
 
+const LandingPage = lazy(() => import("../../features/landing/LandingPage").then((module) => ({ default: module.LandingPage })));
 const DriversPage = lazy(() => import("../../features/drivers/DriversPage").then((module) => ({ default: module.DriversPage })));
 const PassengersPage = lazy(() => import("../../features/passengers/PassengersPage").then((module) => ({ default: module.PassengersPage })));
 const VehiclesPage = lazy(() => import("../../features/vehicles/VehiclesPage").then((module) => ({ default: module.VehiclesPage })));
@@ -21,7 +21,7 @@ export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<Suspense fallback={<LoadingState label="Cargando inicio" />}><LandingPage /></Suspense>} />
         <Route element={<PublicOnly />}><Route path="/login" element={<LoginPage />} /></Route>
         <Route element={<RequireAuth />}>
           <Route path="/change-password" element={<ChangePasswordPage />} />
