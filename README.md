@@ -73,15 +73,17 @@ Roles disponibles:
 - El dashboard incluye la hora UTC de consulta presentada en hora de Bogotá y actualiza sus métricas cada 30 segundos mientras la pestaña está visible. El mapa y la actualización de posiciones están en el módulo de vehículos.
 - La interfaz de campos personalizados del vehículo se ajusta al ancho real de su panel; el mapa usa tiles canónicos de OSM y conserva el `Referer` requerido por la política. El cambio de tiles requiere un nuevo despliegue para verse en producción.
 
-## Pendientes de entrega
+## Estado de validación y trabajo pendiente
 
-- La landing pública cumple UX-07 en Lighthouse móvil: rendimiento 97, accesibilidad 96 y buenas prácticas 96, ejecutado en viewport de 360 × 800 px el 8 de noviembre de 2026. La captura está debajo; Lighthouse 13.6.0 y Chrome 156.
+- La landing pública cumple UX-07 en Lighthouse móvil: rendimiento 95, accesibilidad 96 y buenas prácticas 96, ejecutado en viewport de 360 × 800 px el 8 de noviembre de 2026. La captura está debajo; Lighthouse 13.6.0 y Chrome 156.
+- El entry JavaScript de producción quedó en 481,10 kB (152,65 kB gzip); la landing diferida ocupa 22,12 kB (6,17 kB gzip). Vite ya no emite la advertencia del límite de chunk.
 - Revisar las vistas autenticadas (dashboard, mapa, tablas y formularios) en móvil, tablet y escritorio; completar la validación WCAG AA y pruebas con lector de pantalla. La revisión pública de la landing se hizo a 360, 768 y 1440 px.
-- Completar la prueba en producción de login Admin, RBAC, operaciones Wialon, mapa y arranque en frío con la cuenta de evaluación. El frontend de Vercel y ambos healthchecks respondieron 200 el 8 de noviembre de 2026; Vercel reportó el deployment del commit `7932ec6` como exitoso.
+- Completar la prueba en producción de login Admin, RBAC, operaciones Wialon, mapa y arranque en frío con la cuenta de evaluación. El frontend de Vercel y ambos healthchecks respondieron 200 el 8 de noviembre de 2026; el proxy `/api/v1/auth/me` respondió 401 como corresponde sin sesión. Vercel reportó el deployment del commit `c6910b9` como exitoso. La primera consulta al healthcheck por Vercel tardó 38,5 s; la consulta directa posterior respondió en aproximadamente 1 s.
+- Una baldosa de OpenStreetMap respondió 200 con el `Referer` del sitio; queda comprobar el mapa renderizado con posiciones reales tras autenticar.
 - Mantener `TRUSTED_PROXY_IPS` vacío mientras no se confirme la IP/CIDR del peer que conecta con Render. Así se ignora el `X-Forwarded-For` no verificado; el límite distribuido por identidad sigue activo. Configurar rangos solo después de verificar el salto de proxy real.
-- `pip-audit -r requirements.txt` no encontró vulnerabilidades conocidas en la revisión local del 8 de noviembre de 2026; confirmar también el workflow CI después de corregir su YAML.
+- CI pasó para el commit `c6910b9`: tests y build del backend/frontend, `pip-audit`, `npm audit` y Docker Compose.
 
-Las suites locales pasan: 66 pruebas frontend y 132 backend. `npm audit --offline --omit=dev` reportó cero vulnerabilidades; `pip-audit` reportó cero vulnerabilidades conocidas en los requisitos Python.
+Las suites pasan: 66 pruebas frontend y 132 backend. `npm audit --offline --omit=dev` y `npm audit --audit-level=high` reportaron cero vulnerabilidades; `pip-audit -r requirements.txt` no encontró vulnerabilidades conocidas en los requisitos Python.
 
 ### Evidencia Lighthouse móvil — landing a 360 px
 
