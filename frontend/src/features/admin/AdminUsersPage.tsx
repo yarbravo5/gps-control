@@ -141,8 +141,8 @@ export function AdminUsersPage() {
               <option value="admin">Administrador</option><option value="operator">Operador</option><option value="viewer">Visualizador</option>
             </select>
           </div>
-          {mode === "create" ? <TextField autoComplete="new-password" hint="Mínimo 8 caracteres, con una letra y un número. El usuario deberá cambiarla al iniciar sesión." label="Contraseña temporal" maxLength={128} minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} /> : <label className="flex min-h-11 items-center gap-3 text-sm text-slate-800"><input checked={isActive} onChange={(event) => setIsActive(event.target.checked)} type="checkbox" />Cuenta activa</label>}
-        </> : <TextField autoComplete="new-password" hint="Mínimo 8 caracteres, con una letra y un número." label="Nueva contraseña temporal" maxLength={128} minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />}
+          {mode === "create" ? <TextField autoComplete="new-password" hint="Mínimo 12 caracteres, con una letra y un número. El usuario deberá cambiarla al iniciar sesión." label="Contraseña temporal" maxLength={128} minLength={12} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} /> : <label className="flex min-h-11 items-center gap-3 text-sm text-slate-800"><input checked={isActive} onChange={(event) => setIsActive(event.target.checked)} type="checkbox" />Cuenta activa</label>}
+        </> : <TextField autoComplete="new-password" hint="Mínimo 12 caracteres, con una letra y un número." label="Nueva contraseña temporal" maxLength={128} minLength={12} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />}
         {formValidationError ? <p className="text-sm text-wine-dark" role="alert">{formValidationError}</p> : null}
         {mutationError ? <p className="text-sm text-wine-dark" role="alert">{mutationError instanceof ApiError ? mutationError.message : "No se pudo completar la operación."}</p> : null}
         <div className="flex flex-wrap gap-2">
@@ -182,7 +182,7 @@ function UserDetail({ label, value }: { label: string; value: string }) {
 }
 
 function validateTemporaryPassword(password: string): string | null {
-  if (password.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
+  if (password.length < 12) return "La contraseña debe tener al menos 12 caracteres.";
   if (!/\p{L}/u.test(password)) return "La contraseña debe incluir al menos una letra.";
   if (!/\p{N}/u.test(password)) return "La contraseña debe incluir al menos un número.";
   return null;

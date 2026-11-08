@@ -12,10 +12,12 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api.v1.api_router import router as api_router
 from app.api.v1.health import router as health_router
 from app.core.config import settings
+from app.core.logging_config import configure_logging
 from app.middleware import SecurityHeadersMiddleware, apply_security_headers
 
 
 logger = logging.getLogger("app.errors")
+configure_logging()
 HTTP_TITLES = {
     400: "Solicitud no válida",
     401: "No autenticado",

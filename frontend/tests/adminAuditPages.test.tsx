@@ -73,7 +73,7 @@ describe("páginas de administración", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: "Rol" }), "operator");
     await user.click(screen.getByRole("button", { name: "Guardar" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("debe incluir al menos un número");
+    expect(await screen.findByRole("alert")).toHaveTextContent("debe tener al menos 12 caracteres");
     expect(postApi).not.toHaveBeenCalled();
   });
 

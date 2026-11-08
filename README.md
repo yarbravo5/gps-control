@@ -83,7 +83,7 @@ Roles disponibles:
 - La variable `TRUSTED_PROXY_IPS` sigue vacía hasta confirmar la IP/CIDR del peer de Render. Así se ignora el `X-Forwarded-For` no verificado; los límites distribuidos de login siguen activos.
 - CI pasó para el commit `1a4a584`: pruebas y build de backend/frontend, `pip-audit`, `npm audit` y Docker Compose.
 
-Las suites pasan: 132 pruebas backend y 67 frontend. `npm audit --offline --audit-level=high` reportó cero vulnerabilidades; `pip-audit` pasó en CI.
+Las suites locales pasan: 136 pruebas backend (81 % de cobertura total) y 68 pruebas frontend. `npm audit --offline --audit-level=high` reportó cero vulnerabilidades; `pip-audit` pasó en CI según la ejecución documentada arriba. Docker no está instalado en el entorno de esta auditoría, por lo que Compose no se ejecutó localmente.
 
 ### Evidencia Lighthouse móvil — landing a 360 px
 
@@ -169,7 +169,7 @@ erDiagram
 - **Adapter/Gateway:** `WialonClient` encapsula HTTP, sesión y errores del proveedor.
 - **DTO/Mapper:** `backend/app/gateways/wialon/dto.py` y `backend/app/mappers/vehicle_mapper.py` convierten respuestas externas a contratos propios.
 - **Inyección de dependencias:** FastAPI `Depends` conecta sesiones y gateways con endpoints; facilita pruebas con sustitutos.
-- **Strategy:** los protocolos por caso de uso (p. ej. `DashboardGateway`) permiten seleccionar implementaciones compatibles; no se agrega una fábrica donde no existe una necesidad real.
+- **Sustitución de gateways en pruebas:** los `Protocol` por caso de uso permiten que las pruebas inyecten dobles compatibles sin acoplarse al cliente Wialon. No hay una selección de estrategia en tiempo de ejecución ni una Factory explícita; el requisito se considera parcial porque el despliegue usa un gateway único.
 
 Las rutas frontend separan vistas por feature, y [`httpClient.ts`](frontend/src/services/api/httpClient.ts) centraliza cookies, renovación de sesión y normalización de errores.
 
@@ -194,7 +194,7 @@ Las rutas frontend separan vistas por feature, y [`httpClient.ts`](frontend/src/
 | SEG-04 Diseño inseguro | Amenazas y mitigaciones resumidas en la tabla anterior; permisos de mínimo privilegio. |
 | SEG-05 Configuración | CSP, HSTS, X-Content-Type-Options, X-Frame-Options y políticas de Referrer; Swagger deshabilitado en producción. |
 | SEG-06 Componentes | Lockfiles versionados; `npm audit --offline --audit-level=high` reportó cero vulnerabilidades en esta revisión local. CI ejecuta `npm audit --audit-level=high` y `pip-audit` en cada push a `main`. |
-| SEG-07 Identidad | Bloqueo temporal de login por intentos fallidos, validación de contraseña, sesión rotatoria y CSRF. Falta limitación distribuida de solicitudes por IP/endpoint. |
+| SEG-07 Identidad | Límite de login compartido por identidad/origen y bloqueo temporal; contraseñas nuevas con mínimo 12 caracteres, una letra y un número; sesión rotatoria y CSRF. No hay rate limiting global ni consulta a una lista de contraseñas comprometidas. Rota la credencial Admin compartida antes de entregarla. |
 | SEG-08 Integridad | Dependencias fijadas, CI, DTOs de Wialon validados y mapeo a contratos propios. |
 | SEG-09 Registro | Auditoría de operaciones y fallos de login; denegaciones de permiso registradas sin token, contraseña ni IP. |
 | SEG-10 Excepciones/SSRF | Host Wialon proviene de configuración; respuestas de error no exponen stack traces ni datos internos. |
@@ -203,6 +203,8 @@ Las rutas frontend separan vistas por feature, y [`httpClient.ts`](frontend/src/
 ## Identidad visual y accesibilidad
 
 La paleta central está definida en `frontend/src/styles/globals.css`: rojo `#eb162c` para marca, rojo oscuro `#d51429` y vino `#a81a2b` para acciones/énfasis, gris `#6b6b6b` para secundarios, teal `#1e8c93` para foco y acentos, púrpura pálido `#eee8f2` para fondos y vino oscuro `#751324` para texto destacado. Los fondos claros usan texto oscuro. El cumplimiento de contraste WCAG debe medirse sobre los estados renderizados antes de declararlo; los colores de marca por sí solos no constituyen evidencia de conformidad.
+
+La explicación de jerarquía, estados semánticos, tokens, contraste y decisiones responsive está en [docs/defensa/decisiones-diseno.md](docs/defensa/decisiones-diseno.md). La matriz final de auditoría registra también qué comprobaciones de accesibilidad siguen necesitando revisión manual.
 
 ## Transformación de datos de Wialon
 
@@ -347,6 +349,8 @@ No subas `.env` ni `.env.local` al repositorio. El workflow de CI rechaza cualqu
 El procedimiento de revisión de credenciales está documentado en [docs/security/secret-rotation.md](docs/security/secret-rotation.md). No contiene valores secretos. Según el contexto confirmado para esta entrega, el token Wialon original no fue publicado ni expuesto y no debe reemplazarse.
 
 - Contrasenas hasheadas con Argon2.
+- Las contraseñas nuevas y cambiadas requieren al menos 12 caracteres, una letra y un número.
+- Los logs del backend se emiten como JSON con hora UTC, nivel, logger y mensaje, sin serializar tokens, cookies ni cuerpos de petición.
 - Access tokens JWT de corta duracion.
 - Refresh tokens rotativos almacenados como hash en base de datos.
 - Cookies `HttpOnly` para refresh y CSRF.
@@ -471,6 +475,9 @@ El plan gratuito de Render suspende el servicio tras un periodo de inactividad. 
 - Separacion por capas: API, servicios, repositorios, mappers y gateways.
 - Mensajes de error orientados al usuario sin filtrar detalles internos.
 - Proxy same-origin en Vercel para cookies de sesion.
+- Supuestos, límites y decisiones de alcance: [docs/defensa/decisiones-diseno.md](docs/defensa/decisiones-diseno.md).
+- Revisión requisito por requisito: [docs/entrega/auditoria-final.md](docs/entrega/auditoria-final.md).
+- Guía de recorrido del código y preparación para la defensa: [docs/defensa/guia-completa-repositorio.md](docs/defensa/guia-completa-repositorio.md) y [docs/defensa/guion-defensa-tecnica.md](docs/defensa/guion-defensa-tecnica.md).
 
 ## Uso de inteligencia artificial
 
@@ -500,6 +507,8 @@ Verificación local y de producción realizada el 8 de noviembre de 2026. Las ca
 | Despliegue publico | Frontend y healthcheck respondieron HTTP 200; login Admin y endpoints de lectura protegidos respondieron correctamente. Confirmar disponibilidad antes de cada evaluación |
 
 La contraseña de la cuenta usada para la prueba se compartió en esta conversación. Rótala antes de entregar esa cuenta a evaluadores y envía la nueva credencial por un canal privado.
+
+La auditoría completa diferencia cumplimiento local de evidencia externa y deja explícitos los pasos de cierre en [docs/entrega/checklist-entrega.md](docs/entrega/checklist-entrega.md). El README no certifica como terminado el ciclo de entrega hasta cerrar esos pasos.
 
 ### Capturas de la aplicación
 
