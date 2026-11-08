@@ -63,12 +63,12 @@ Roles disponibles:
 - Aviso de arranque en frío para el plan gratuito de Render.
 - Pruebas de componentes, router, cliente HTTP y flujo de autenticación.
 
-### Pendiente para siguientes iteraciones
+### Limitaciones conocidas y siguientes pasos
 
-- Reproductor de historial de recorridos.
-- Campos personalizados de vehículos.
-- Auditoría completa de mutaciones CRUD/bindings de conductores y pasajeros.
-- Rate limiting global adicional al bloqueo de login.
+- No hay rate limiting global; el login tiene bloqueo temporal por intentos fallidos.
+- El backend limita el historial a siete días y 5.000 puntos por consulta; rangos mayores deben dividirse.
+- La auditoría registra mutaciones de vehículos, conductores, pasajeros y administración, además de fallos de login; su consulta es exclusiva del Admin.
+- El dashboard consulta métricas actuales al cargar o volver a enfocarse, pero no muestra una hora de actualización ni incluye un mapa propio. La ubicación y actualización periódica están en el módulo de vehículos.
 
 ## Stack
 
@@ -248,7 +248,7 @@ No subas `.env` ni `.env.local` al repositorio. El workflow de CI rechaza cualqu
 
 ## Seguridad
 
-El procedimiento pendiente de rotación de credenciales expuestas está documentado en [docs/security/secret-rotation.md](docs/security/secret-rotation.md). No contiene valores secretos; la revocación debe completarla el propietario en Wialon, Neon y Render.
+El procedimiento de revisión de credenciales está documentado en [docs/security/secret-rotation.md](docs/security/secret-rotation.md). No contiene valores secretos. Según el contexto confirmado para esta entrega, el token Wialon original no fue publicado ni expuesto y no debe reemplazarse.
 
 - Contrasenas hasheadas con Argon2.
 - Access tokens JWT de corta duracion.
@@ -393,8 +393,8 @@ Pautas aplicadas:
 | RBAC y permisos | Completo en backend; guards en frontend |
 | Dashboard | API de métricas protegida y gráficas frontend; pendiente verificar con recursos reales de Wialon en producción |
 | Vehiculos y Wialon | Listado, mapa y detalle con conductor/pasajeros integrados |
-| Historial de recorridos | Backend completo; reproductor pendiente |
+| Historial de recorridos | Backend y reproducción en frontend implementados; límite de 5.000 puntos por consulta |
 | Conductores y pasajeros | CRUD, custom fields y bindings integrados |
-| Usuarios y auditoria | Paneles conectados; auditoría de todas las mutaciones de personas/bindings pendiente |
+| Usuarios y auditoria | Paneles conectados; mutaciones de personas, vinculaciones, campos y usuarios auditadas |
 | Exportacion CSV | Descarga conectada para vehículos, conductores y pasajeros; saneamiento central y RBAC backend |
-| Despliegue publico | Frontend y backend activos; los commits locales recientes aún no están desplegados |
+| Despliegue publico | URLs configuradas en la sección de entrega; disponibilidad y credenciales deben comprobarse antes de cada evaluación |

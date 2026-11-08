@@ -1,22 +1,35 @@
-# Procedimiento de rotación de secretos
+# Revision y rotacion de credenciales
 
 ## Estado
 
-Pendiente de ejecución por el propietario de las cuentas externas. Se detectó exposición de credenciales reales en el contexto de trabajo; sus valores no se guardan en este documento, en Git ni en logs.
+El propietario confirmo que el token Wialon original fue entregado por GPS
+Control y nunca se publico en GitHub ni en archivos versionados. Esta auditoria
+no requiere cambiarlo y no se debe reemplazar por este procedimiento.
 
-## Orden recomendado
+La rotacion de otras credenciales solo se realiza si el propietario detecta una
+exposicion o decide renovarlas desde los paneles de los proveedores. Esta
+auditoria no comprobo credenciales ni configuracion de Neon, Render o cuentas
+locales.
 
-1. **Wialon:** revocar el token expuesto en la cuenta de Wialon y emitir uno nuevo. Reemplazar `WIALON_TOKEN` en Render y en `backend/.env` local. El token anterior debe dejar de ser válido antes de dar por cerrada la exposición.
-2. **Neon:** rotar la contraseña del rol PostgreSQL desde el panel de Neon. Actualizar `DATABASE_URL` en Render y la configuración local correspondiente, conservando TLS y el host/puerto correctos. Verificar conectividad y migraciones antes de cerrar la ventana.
-3. **JWT:** configurar un `JWT_SECRET` nuevo, aleatorio y exclusivo por ambiente en Render y local. La rotación invalida access y refresh tokens existentes; todos los usuarios deberán iniciar sesión de nuevo.
-4. **Administrador:** cambiar la contraseña del usuario Admin existente mediante un procedimiento administrativo seguro y revocar sus sesiones. Cambiar solo `ADMIN_PASSWORD` no actualiza usuarios ya creados por el seed. Si se usa el reset de contraseña de la API, iniciar la operación desde un dispositivo y sesión confiables y cerrar todas las sesiones al finalizar.
+## Procedimiento si el propietario decide rotar otra credencial
 
-No copiar valores secretos a tickets, comandos visibles, capturas, documentación o historial de shell. Introducirlos directamente en los paneles de cada proveedor o en el archivo local ignorado por Git.
+1. **Neon:** si rota la contraseña PostgreSQL, actualizar `DATABASE_URL` en la
+   plataforma y configuracion local, conservar TLS y verificar conexion y
+   migraciones.
+2. **JWT:** usar valores aleatorios distintos por ambiente. La rotacion invalida
+   tokens y obliga a iniciar sesion de nuevo.
+3. **Administrador:** cambiar la contraseña desde el procedimiento
+   administrativo y revocar sesiones. Cambiar solo `ADMIN_PASSWORD` no actualiza
+   usuarios ya creados por el seed.
 
-## Verificación posterior
+No copiar secretos a tickets, comandos visibles, capturas, documentacion o
+historial de shell. Introducirlos directamente en los paneles de proveedores o
+en archivos locales ignorados por Git.
 
-- Confirmar que el token Wialon anterior fue revocado y que el backend consulta Wialon con el nuevo.
-- Confirmar healthcheck, conexión a PostgreSQL y estado de migraciones.
-- Probar login con el Admin rotado, consultar `/auth/me`, probar refresh y logout; confirmar que la sesión anterior no se puede renovar.
-- Revisar logs de Render y GitHub Actions para descartar valores sensibles.
-- No registrar la operación como completada hasta verificar los cuatro secretos en sus proveedores.
+## Verificacion posterior
+
+- No rotar ni revocar el token Wialon como parte de esta auditoria.
+- Si se rota otra credencial, verificar healthcheck, conexion a PostgreSQL,
+  migraciones, login, refresh y logout desde las plataformas correspondientes.
+- No registrar una rotacion como completada sin confirmacion del propietario y
+  verificacion del servicio.
