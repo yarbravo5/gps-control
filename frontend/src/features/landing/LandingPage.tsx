@@ -163,7 +163,7 @@ export function LandingPage() {
 
       <section aria-labelledby="solutions-heading" className="landing-solutions" id="soluciones">
         <div className="landing-container"><div className="landing-section__heading landing-section__heading--center"><p className="landing-eyebrow">Una solución para cada recorrido</p><h2 id="solutions-heading">Acompañamos a quienes <span>mueven el país.</span></h2><p>Una plataforma flexible para flotas y equipos que necesitan conocer su operación.</p></div>
-          <div className="landing-solutions__grid">{solutions.map((solution) => <article className="landing-solution" key={solution.type}><div className="landing-solution__art"><ScenarioIllustration type={solution.type}/></div><div className="landing-solution__copy"><h3>{solution.title}</h3><p>{solution.detail}</p></div></article>)}</div>
+          <div className="landing-solutions__grid">{solutions.map((solution) => <article className="landing-solution" key={solution.type}><div className="landing-solution__art">{solution.type === "van" ? <img alt="" aria-hidden="true" className="commercial-fleet-illustration" src="/images/commercial-fleet-car.svg"/> : <ScenarioIllustration type={solution.type}/>}</div><div className="landing-solution__copy"><h3>{solution.title}</h3><p>{solution.detail}</p></div></article>)}</div>
         </div>
       </section>
 

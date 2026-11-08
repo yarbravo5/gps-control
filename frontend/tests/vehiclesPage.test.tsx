@@ -13,6 +13,11 @@ vi.mock("../src/services/api/httpClient", () => ({
   httpClient: { get: vi.fn() },
 }));
 
+const authMock = vi.hoisted(() => ({ permissions: [] as string[] }));
+vi.mock("../src/features/auth/AuthProvider", () => ({
+  useAuth: () => ({ hasPermission: (permission: string) => authMock.permissions.includes(permission) }),
+}));
+
 vi.mock("../src/features/vehicles/FleetMap", () => ({
   FleetMap: ({
     vehicles,

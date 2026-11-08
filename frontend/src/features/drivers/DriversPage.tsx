@@ -8,6 +8,7 @@ import { TextField } from "../../components/ui/TextField";
 import { ApiError } from "../../services/api/apiError";
 import { useAuth } from "../auth/AuthProvider";
 import { CustomFieldsEditor } from "../foundation/CustomFieldsEditor";
+import { ExportCsvButton } from "../foundation/ExportCsvButton";
 import { ResourcePicker } from "../foundation/ResourcePicker";
 import { listAllResources } from "../foundation/resourcesApi";
 import { createDriver, deleteDriver, listDrivers, setDriverBinding, updateDriver } from "./driversApi";
@@ -40,6 +41,7 @@ export function DriversPage() {
   const queryClient = useQueryClient();
   const canWrite = hasPermission("drivers:write");
   const canBind = hasPermission("drivers:bind");
+  const canExport = hasPermission("export:csv");
   const [resourceId, setResourceId] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
@@ -160,6 +162,7 @@ export function DriversPage() {
             <p aria-live="polite" className="text-sm text-teal-900" role="status">{successMessage}</p>
             <button className="button-primary min-h-11 rounded-control px-4 text-sm font-semibold" onClick={openCreateForm} type="button">Nuevo conductor</button>
           </div> : null}
+          {canExport ? <ExportCsvButton kind="drivers" /> : null}
           {formOpen && canWrite ? <form aria-label={editingDriver ? "Editar conductor" : "Crear conductor"} className="grid gap-4 border-y border-slate-200 py-5" onSubmit={saveDriver}>
             <h2 className="text-lg font-semibold text-slate-950">{editingDriver ? "Editar conductor" : "Nuevo conductor"}</h2>
             <div className="grid gap-3 sm:grid-cols-2">

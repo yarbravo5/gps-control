@@ -35,3 +35,10 @@ export async function listAllResources(): Promise<ResourceSummary[]> {
 
   return resources;
 }
+
+export type ExportKind = "vehicles" | "drivers" | "passengers";
+
+export async function downloadCsv(kind: ExportKind): Promise<Blob> {
+  const response = await httpClient.get<Blob>(`/exports/${kind}`, { responseType: "blob" });
+  return response.data;
+}

@@ -7,6 +7,8 @@ import { LoadingState } from "../../components/feedback/LoadingState";
 import { Button } from "../../components/ui/Button";
 import { TextField } from "../../components/ui/TextField";
 import { ApiError } from "../../services/api/apiError";
+import { useAuth } from "../auth/AuthProvider";
+import { ExportCsvButton } from "../foundation/ExportCsvButton";
 import { getVehicle, listAllVehicles, listVehicles } from "./vehiclesApi";
 import type { Vehicle, VehicleDetail, VehicleStatus } from "./vehiclesApi";
 
@@ -40,6 +42,8 @@ const bogotaDate = new Intl.DateTimeFormat("es-CO", {
 });
 
 export function VehiclesPage() {
+  const { hasPermission } = useAuth();
+  const canExport = hasPermission("export:csv");
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<VehicleStatus | "">("");
@@ -98,6 +102,7 @@ export function VehiclesPage() {
           <h1 className="text-2xl font-bold text-slate-950" id="vehicles-title">Vehículos</h1>
         </div>
         {page ? <p aria-live="polite" className="text-sm text-muted">{page.total} vehículos en la flota</p> : null}
+        {canExport ? <ExportCsvButton kind="vehicles" /> : null}
       </header>
 
       <form className="grid gap-3 rounded-card border border-slate-200 bg-white p-4 sm:grid-cols-[minmax(12rem,1fr)_12rem_auto] sm:items-end" onSubmit={submitSearch}>

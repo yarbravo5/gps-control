@@ -2,7 +2,7 @@
 
 Sistema de monitoreo de flota construido sobre Wialon, con autenticación por roles, API REST, auditoría y frontend React.
 
-Este repositorio corresponde a la prueba técnica de GPS Control. El backend incluye autenticación, permisos e integración con Wialon; el frontend incluye la landing, el flujo de autenticación, el shell de la aplicación y un listado de vehículos con búsqueda, filtros y paginación del servidor. El mapa, dashboard y demás módulos de gestión del frontend siguen pendientes.
+Este repositorio corresponde a la prueba técnica de GPS Control. El backend incluye autenticación, permisos, auditoría e integración con Wialon; el frontend incluye landing, dashboard, mapa de flota, detalle de vehículos, gestión de conductores y pasajeros, administración, auditoría, exportación CSV e historial de recorridos con playback.
 
 ## Enlaces de la entrega
 
@@ -59,6 +59,7 @@ Roles disponibles:
 - Dashboard con KPIs y gráficas calculadas desde vehículos, conductores y pasajeros devueltos por Wialon.
 - CRUD de conductores y pasajeros con selección de recurso, búsqueda/paginación, custom fields y vinculación a unidades Wialon.
 - Panel Admin para usuarios/roles y reset de contraseña; vista paginada de auditoría exclusiva por permiso.
+- Exportación CSV de vehículos, conductores y pasajeros con permiso backend `export:csv` y neutralización de fórmulas.
 - Aviso de arranque en frío para el plan gratuito de Render.
 - Pruebas de componentes, router, cliente HTTP y flujo de autenticación.
 
@@ -66,7 +67,7 @@ Roles disponibles:
 
 - Reproductor de historial de recorridos.
 - Campos personalizados de vehículos.
-- Exportación CSV (el permiso `export:csv` ya existe en el catálogo).
+- Auditoría completa de mutaciones CRUD/bindings de conductores y pasajeros.
 - Rate limiting global adicional al bloqueo de login.
 
 ## Stack
@@ -266,7 +267,7 @@ El procedimiento pendiente de rotación de credenciales expuestas está document
 Limitaciones de seguridad conocidas:
 
 - No hay rate limiting global; existe bloqueo de login por intentos fallidos.
-- La exportacion CSV esta reservada en permisos pero aun no implementada.
+- La exportación CSV neutraliza fórmulas y aplica el permiso `export:csv` en el backend.
 - El plan gratuito de Render puede tardar en responder tras un periodo de inactividad.
 
 ## API
@@ -283,6 +284,7 @@ La API se publica bajo `/api/v1`.
 | `POST` | `/auth/change-password` | Cambia la contrasena e invalida sesiones. |
 | `GET` | `/vehicles` | Lista de vehiculos con filtros y paginacion. |
 | `GET` | `/vehicles/{id}/history` | Historial de recorridos. |
+| `GET` | `/exports/{kind}` | Exporta vehículos, conductores o pasajeros en CSV. |
 | `GET` | `/drivers` | Lista de conductores. |
 | `POST` | `/drivers` | Crea conductor. |
 | `GET` | `/drivers/{id}` | Detalle de conductor. |
@@ -394,5 +396,5 @@ Pautas aplicadas:
 | Historial de recorridos | Backend completo; reproductor pendiente |
 | Conductores y pasajeros | CRUD, custom fields y bindings integrados |
 | Usuarios y auditoria | Paneles conectados; auditoría de todas las mutaciones de personas/bindings pendiente |
-| Exportacion CSV | Pendiente |
+| Exportacion CSV | Descarga conectada para vehículos, conductores y pasajeros; saneamiento central y RBAC backend |
 | Despliegue publico | Frontend y backend activos; los commits locales recientes aún no están desplegados |

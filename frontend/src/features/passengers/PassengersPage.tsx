@@ -8,6 +8,7 @@ import { TextField } from "../../components/ui/TextField";
 import { ApiError } from "../../services/api/apiError";
 import { useAuth } from "../auth/AuthProvider";
 import { CustomFieldsEditor } from "../foundation/CustomFieldsEditor";
+import { ExportCsvButton } from "../foundation/ExportCsvButton";
 import { ResourcePicker } from "../foundation/ResourcePicker";
 import { listAllResources } from "../foundation/resourcesApi";
 import { createPassenger, deletePassenger, listPassengers, setPassengerBinding, updatePassenger } from "./passengersApi";
@@ -38,6 +39,7 @@ export function PassengersPage() {
   const queryClient = useQueryClient();
   const canWrite = hasPermission("passengers:write");
   const canBind = hasPermission("passengers:bind");
+  const canExport = hasPermission("export:csv");
   const [resourceId, setResourceId] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
@@ -156,6 +158,7 @@ export function PassengersPage() {
             <p aria-live="polite" className="text-sm text-teal-900" role="status">{successMessage}</p>
             <button className="button-primary min-h-11 rounded-control px-4 text-sm font-semibold" onClick={openCreateForm} type="button">Nuevo pasajero</button>
           </div> : null}
+          {canExport ? <ExportCsvButton kind="passengers" /> : null}
           {formOpen && canWrite ? <form aria-label={editingPassenger ? "Editar pasajero" : "Crear pasajero"} className="grid gap-4 border-y border-slate-200 py-5" onSubmit={savePassenger}>
             <h2 className="text-lg font-semibold text-slate-950">{editingPassenger ? "Editar pasajero" : "Nuevo pasajero"}</h2>
             <div className="grid gap-3 sm:grid-cols-2">

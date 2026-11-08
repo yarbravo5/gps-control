@@ -2960,6 +2960,14 @@ summary::-webkit-details-marker {
   min-height: 9rem;
 }
 
+.landing-solution:nth-child(2) .commercial-fleet-illustration {
+  display: block;
+  width: min(100%, 24rem);
+  height: auto;
+  max-width: none;
+  filter: drop-shadow(0 8px 8px rgb(23 21 26 / 12%));
+}
+
 .landing-solution__copy {
   padding: 0.95rem 1.15rem 1.1rem;
 }
