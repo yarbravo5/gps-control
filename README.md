@@ -77,7 +77,7 @@ Roles disponibles:
 
 - La landing pública cumple UX-07 en Lighthouse móvil: rendimiento 96, accesibilidad 96 y buenas prácticas 96, ejecutado en viewport de 360 × 800 px el 8 de noviembre de 2026. La captura de la landing está debajo; se generó con Lighthouse 13.6.0 y Chrome 156.
 - El entry JavaScript de producción quedó en 481,32 kB (152,72 kB gzip); la landing diferida ocupa 22,12 kB (6,17 kB gzip). Vite ya no emite la advertencia del límite de chunk.
-- Playwright y axe revisaron las siete vistas protegidas a 1440 px y el mapa a 390 px: sin errores JavaScript, respuestas HTTP 5xx, desbordamiento horizontal ni violaciones WCAG 2.1 A/AA en las reglas automatizadas. Falta la revisión manual con lector de pantalla y revisar todas las vistas autenticadas en tablet y en otros anchos móviles.
+- Playwright y axe revisaron las siete vistas protegidas a 390, 768 y 1440 px: sin errores JavaScript, respuestas HTTP 5xx, desbordamiento horizontal ni violaciones WCAG 2.1 A/AA en las reglas automatizadas. Falta la revisión manual con lector de pantalla.
 - La prueba de producción del 8 de noviembre confirmó login Admin, rol y 13 permisos, renovación de sesión y logout. Dashboard, vehículos, recursos Wialon, conductores, pasajeros, usuarios y auditoría respondieron 200. El mapa cargó 62 unidades y 61 posiciones válidas. No se ejecutaron mutaciones sobre datos Wialon.
 - Frontend y healthcheck respondieron 200. Vercel sirvió los assets del commit `1a4a584`; la API confirmó salud y autenticación. El plan gratuito de Render puede tardar en despertar.
 - La variable `TRUSTED_PROXY_IPS` sigue vacía hasta confirmar la IP/CIDR del peer de Render. Así se ignora el `X-Forwarded-For` no verificado; los límites distribuidos de login siguen activos.
