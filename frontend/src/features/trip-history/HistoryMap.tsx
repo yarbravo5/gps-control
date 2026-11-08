@@ -38,7 +38,8 @@ export function HistoryMap({ points, activeIndex }: HistoryMapProps) {
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           maxZoom={19}
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          referrerPolicy="strict-origin-when-cross-origin"
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <MapViewport positions={positions} />
         {positions.length > 1 ? (
