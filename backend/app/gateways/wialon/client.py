@@ -1,4 +1,9 @@
 import json
+import random
+import threading
+import time
+from collections import OrderedDict
+from copy import deepcopy
 from typing import Any
 
 import httpx
@@ -21,6 +26,7 @@ from app.gateways.wialon.exceptions import (
     WialonApiError,
     WialonAuthenticationError,
     WialonConnectionError,
+    WialonTransientError,
 )
 from app.gateways.wialon.session import WialonSession
 
@@ -43,12 +49,21 @@ class WialonClient:
         host: str,
         timeout_seconds: float,
         http_client: httpx.Client | None = None,
+        *,
+        retry_attempts: int = 3,
+        retry_base_delay_seconds: float = 0.25,
+        read_cache_ttl_seconds: float = 10,
     ) -> None:
         self._token = token
         self._url = f"https://{host.strip().rstrip('/')}/wialon/ajax.html"
         self._http = http_client or httpx.Client(timeout=timeout_seconds)
         self._owns_http = http_client is None
         self._session = WialonSession()
+        self._retry_attempts = max(1, retry_attempts)
+        self._retry_base_delay_seconds = max(0, retry_base_delay_seconds)
+        self._read_cache_ttl_seconds = max(0, read_cache_ttl_seconds)
+        self._read_cache: OrderedDict[str, tuple[float, Any]] = OrderedDict()
+        self._cache_lock = threading.Lock()
 
     def close(self) -> None:
         if self._owns_http:
@@ -60,13 +75,21 @@ class WialonClient:
             form["sid"] = sid
         try:
             response = self._http.post(self._url, data=form)
+            if response.status_code == 429 or response.status_code >= 500:
+                raise WialonTransientError("El servicio de telemetría está temporalmente indisponible.")
             response.raise_for_status()
             body = response.json()
+        except WialonTransientError:
+            raise
         except httpx.TransportError as exc:
-            raise WialonConnectionError(
+            raise WialonTransientError(
                 "No fue posible conectar con el servicio de telemetría."
             ) from exc
-        except (httpx.HTTPStatusError, ValueError) as exc:
+        except httpx.HTTPStatusError as exc:
+            raise WialonConnectionError(
+                "El servicio de telemetría devolvió una respuesta inválida."
+            ) from exc
+        except ValueError as exc:
             raise WialonConnectionError(
                 "El servicio de telemetría devolvió una respuesta inválida."
             ) from exc
@@ -89,11 +112,64 @@ class WialonClient:
             )
         return sid
 
-    def _request(self, service: str, params: dict[str, Any]) -> Any:
-        return self._session.execute(
-            lambda sid: self._post(service, params, sid),
-            self._login,
-        )
+    def _request(
+        self,
+        service: str,
+        params: dict[str, Any],
+        *,
+        retry_safe: bool = False,
+        cache_ttl_seconds: float = 0,
+    ) -> Any:
+        cache_key = json.dumps([service, params], sort_keys=True, separators=(",", ":"))
+        if cache_ttl_seconds > 0:
+            cached = self._get_cached(cache_key)
+            if cached is not None:
+                return cached
+        if not retry_safe:
+            # A write may succeed remotely even if its response gets lost.
+            self._clear_read_cache()
+
+        attempts = self._retry_attempts if retry_safe else 1
+        for attempt in range(attempts):
+            try:
+                result = self._session.execute(
+                    lambda sid: self._post(service, params, sid),
+                    self._login,
+                )
+                if cache_ttl_seconds > 0:
+                    self._set_cached(cache_key, result, cache_ttl_seconds)
+                return result
+            except WialonTransientError:
+                if attempt + 1 >= attempts:
+                    raise
+                maximum_delay = self._retry_base_delay_seconds * (2**attempt)
+                time.sleep(random.uniform(maximum_delay / 2, maximum_delay))
+
+        raise AssertionError("Wialon retry loop exited without a result")
+
+    def _get_cached(self, key: str) -> Any | None:
+        now = time.monotonic()
+        with self._cache_lock:
+            entry = self._read_cache.get(key)
+            if entry is None:
+                return None
+            expires_at, value = entry
+            if expires_at <= now:
+                del self._read_cache[key]
+                return None
+            self._read_cache.move_to_end(key)
+            return deepcopy(value)
+
+    def _set_cached(self, key: str, value: Any, ttl_seconds: float) -> None:
+        with self._cache_lock:
+            self._read_cache[key] = (time.monotonic() + ttl_seconds, deepcopy(value))
+            self._read_cache.move_to_end(key)
+            while len(self._read_cache) > 256:
+                self._read_cache.popitem(last=False)
+
+    def _clear_read_cache(self) -> None:
+        with self._cache_lock:
+            self._read_cache.clear()
 
     def search_items(
         self,
@@ -116,6 +192,8 @@ class WialonClient:
                 "from": offset,
                 "to": offset + limit - 1,
             },
+            retry_safe=True,
+            cache_ttl_seconds=self._read_cache_ttl_seconds,
         )
         if not isinstance(body, dict) or not isinstance(body.get("items"), list):
             raise WialonConnectionError(
@@ -135,7 +213,10 @@ class WialonClient:
     def search_item(self, unit_id: int) -> WialonUnit | None:
         """Reserved for detail use; the response is parsed before leaving this adapter."""
         body = self._request(
-            "core/search_item", {"id": unit_id, "flags": self.UNIT_FLAGS}
+            "core/search_item",
+            {"id": unit_id, "flags": self.UNIT_FLAGS},
+            retry_safe=True,
+            cache_ttl_seconds=self._read_cache_ttl_seconds,
         )
         item = body.get("item") if isinstance(body, dict) else None
         if item is None:
@@ -180,6 +261,8 @@ class WialonClient:
                 "from": offset,
                 "to": offset + limit - 1,
             },
+            retry_safe=True,
+            cache_ttl_seconds=self._read_cache_ttl_seconds,
         )
         if not isinstance(body, dict) or not isinstance(body.get("items"), list):
             raise WialonConnectionError(
@@ -211,7 +294,7 @@ class WialonClient:
             "flags": 1,
             "flagsMask": 0xFF01,
             "loadCount": load_count,
-        })
+        }, retry_safe=True)
         result = history_from_wialon(body)
         if result is None:
             raise WialonConnectionError(
@@ -221,7 +304,10 @@ class WialonClient:
 
     def get_resource(self, resource_id: int, flags: int) -> WialonResource | None:
         body = self._request(
-            "core/search_item", {"id": resource_id, "flags": flags}
+            "core/search_item",
+            {"id": resource_id, "flags": flags},
+            retry_safe=True,
+            cache_ttl_seconds=self._read_cache_ttl_seconds,
         )
         item = body.get("item") if isinstance(body, dict) else None
         if not isinstance(item, dict):
@@ -455,14 +541,24 @@ class WialonClient:
         return resource.passengers[0]
 
     def get_unit_drivers(self, unit_id: int, resource_id: int) -> list[WialonUnitDriver]:
-        body = self._request("resource/get_unit_drivers", {"unitId": unit_id})
+        body = self._request(
+            "resource/get_unit_drivers",
+            {"unitId": unit_id},
+            retry_safe=True,
+            cache_ttl_seconds=self._read_cache_ttl_seconds,
+        )
         records = body.get(str(resource_id), []) if isinstance(body, dict) else []
         if not isinstance(records, list):
             raise WialonConnectionError("Respuesta inválida al consultar conductores vinculados.")
         return self._unit_drivers_from_records(records, resource_id)
 
     def get_unit_drivers_for_all_resources(self, unit_id: int) -> list[WialonUnitDriver]:
-        body = self._request("resource/get_unit_drivers", {"unitId": unit_id})
+        body = self._request(
+            "resource/get_unit_drivers",
+            {"unitId": unit_id},
+            retry_safe=True,
+            cache_ttl_seconds=self._read_cache_ttl_seconds,
+        )
         if not isinstance(body, dict):
             raise WialonConnectionError("Respuesta inválida al consultar conductores vinculados.")
         result = []
@@ -509,7 +605,7 @@ class WialonClient:
         body = self._request("resource/get_driver_bindings", {
             "resourceId": resource_id, "unitId": unit_id, "driverId": driver_id,
             "timeFrom": time_from, "timeTo": time_to,
-        })
+        }, retry_safe=True, cache_ttl_seconds=self._read_cache_ttl_seconds)
         return self._binding_events(body)
 
     def set_driver_auto_units(self, resource_id: int, unit_ids: list[int]) -> list[int]:
@@ -546,7 +642,7 @@ class WialonClient:
         body = self._request("resource/get_tag_bindings", {
             "resourceId": resource_id, "unitId": unit_id, "tagId": passenger_id,
             "timeFrom": time_from, "timeTo": time_to,
-        })
+        }, retry_safe=True, cache_ttl_seconds=self._read_cache_ttl_seconds)
         return self._binding_events(body, tag=True)
 
     @staticmethod

@@ -314,6 +314,7 @@ La plantilla completa del backend esta en `backend/.env.example`. Las principale
 | `COOKIE_SECURE`, `COOKIE_SAMESITE`, `COOKIE_DOMAIN` | Atributos de cookies de sesion. |
 | `WIALON_TOKEN`, `WIALON_HOST` | Credenciales de Wialon. El token no se versiona. |
 | `WIALON_HTTP_TIMEOUT_SECONDS` | Timeout de llamadas a Wialon. |
+| `WIALON_RETRY_ATTEMPTS`, `WIALON_RETRY_BASE_DELAY_SECONDS`, `WIALON_READ_CACHE_TTL_SECONDS` | Reintentos acotados de lecturas y TTL de caché Wialon en memoria. Las escrituras no se reintentan. |
 | `CORS_ORIGINS` | Origenes permitidos, separados por coma. |
 | `ADMIN_EMAIL`, `ADMIN_NAME`, `ADMIN_PASSWORD` | Administrador inicial creado por el seed. |
 

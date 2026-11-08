@@ -6,6 +6,10 @@ class WialonConnectionError(WialonIntegrationError):
     pass
 
 
+class WialonTransientError(WialonConnectionError):
+    """A transport or upstream overload failure that may succeed on retry."""
+
+
 class WialonAuthenticationError(WialonIntegrationError):
     pass
 

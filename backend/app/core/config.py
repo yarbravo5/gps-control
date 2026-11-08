@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     wialon_token: SecretStr
     wialon_host: str = "hst-api.wialon.com"
     wialon_http_timeout_seconds: float = Field(default=10.0, gt=0)
+    wialon_retry_attempts: int = Field(default=3, ge=1, le=5)
+    wialon_retry_base_delay_seconds: float = Field(default=0.25, gt=0, le=5)
+    wialon_read_cache_ttl_seconds: float = Field(default=10, gt=0, le=60)
     wialon_no_signal_after_seconds: int = Field(default=600, gt=0)
 
     # CORS

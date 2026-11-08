@@ -11,7 +11,7 @@ from app.gateways.wialon.exceptions import (
 )
 
 
-def make_client(handler):
+def make_client(handler, **client_options):
     transport = httpx.MockTransport(handler)
     http_client = httpx.Client(transport=transport)
     return WialonClient(
@@ -19,6 +19,8 @@ def make_client(handler):
         host="hst-api.wialon.com",
         timeout_seconds=1,
         http_client=http_client,
+        retry_base_delay_seconds=0,
+        **client_options,
     )
 
 
@@ -142,6 +144,78 @@ def test_connection_error_is_sanitized() -> None:
     with pytest.raises(WialonConnectionError) as raised:
         client.search_items(None, 0, 10)
     assert "private network details" not in str(raised.value)
+
+
+def test_read_request_retries_transient_upstream_failure() -> None:
+    search_calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal search_calls
+        data = form(request)
+        if data["svc"] == "token/login":
+            return httpx.Response(200, json={"eid": "mock-session"})
+        search_calls += 1
+        if search_calls == 1:
+            return httpx.Response(503, json={"error": "temporary"})
+        return httpx.Response(200, json={"totalItemsCount": 0, "items": []})
+
+    client = make_client(handler)
+
+    assert client.search_items(None, 0, 10).total == 0
+    assert search_calls == 2
+
+
+def test_write_request_is_not_retried_after_ambiguous_upstream_failure() -> None:
+    update_calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal update_calls
+        data = form(request)
+        if data["svc"] == "token/login":
+            return httpx.Response(200, json={"eid": "mock-session"})
+        update_calls += 1
+        return httpx.Response(503, json={"error": "temporary"})
+
+    client = make_client(handler)
+    with pytest.raises(WialonConnectionError):
+        client.update_unit_custom_field(42, field_id=5, call_mode="delete")
+
+    assert update_calls == 1
+
+
+def test_read_cache_expires_and_mutations_invalidate_it(monkeypatch) -> None:
+    from app.gateways.wialon import client as client_module
+
+    now = 100.0
+    search_calls = 0
+
+    def fake_monotonic() -> float:
+        return now
+
+    monkeypatch.setattr(client_module.time, "monotonic", fake_monotonic)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal search_calls
+        data = form(request)
+        if data["svc"] == "token/login":
+            return httpx.Response(200, json={"eid": "mock-session"})
+        if data["svc"] == "core/search_items":
+            search_calls += 1
+            return httpx.Response(200, json={"totalItemsCount": search_calls, "items": []})
+        return httpx.Response(200, json={})
+
+    client = make_client(handler, read_cache_ttl_seconds=10)
+    assert client.search_items(None, 0, 10).total == 1
+    assert client.search_items(None, 0, 10).total == 1
+    assert search_calls == 1
+
+    client.update_unit_custom_field(42, field_id=5, call_mode="delete")
+    assert client.search_items(None, 0, 10).total == 2
+    assert search_calls == 2
+
+    now += 11
+    assert client.search_items(None, 0, 10).total == 3
+    assert search_calls == 3
 
 
 def test_unit_custom_fields_are_parsed_and_updated_through_wialon() -> None:

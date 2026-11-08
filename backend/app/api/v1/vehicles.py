@@ -27,6 +27,9 @@ _wialon_gateway = WialonClient(
     token=settings.wialon_token.get_secret_value(),
     host=settings.wialon_host,
     timeout_seconds=settings.wialon_http_timeout_seconds,
+    retry_attempts=settings.wialon_retry_attempts,
+    retry_base_delay_seconds=settings.wialon_retry_base_delay_seconds,
+    read_cache_ttl_seconds=settings.wialon_read_cache_ttl_seconds,
 )
 
 
