@@ -1,3 +1,7 @@
+import base64
+import hashlib
+import re
+
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
@@ -70,6 +74,21 @@ def test_api_docs_are_available_in_production_without_bypassing_auth(
     assert docs_response.status_code == 200
     assert openapi_response.status_code == 200
     assert redoc_response.status_code == 200
+
+    swagger_script = re.search(
+        r"<script>(.*?)</script>", docs_response.text, re.DOTALL
+    )
+    assert swagger_script is not None
+    script_hash = base64.b64encode(
+        hashlib.sha256(swagger_script.group(1).encode("utf-8")).digest()
+    ).decode("ascii")
+    script_policy = next(
+        directive
+        for directive in docs_response.headers["content-security-policy"].split(";")
+        if directive.strip().startswith("script-src ")
+    )
+    assert f"'sha256-{script_hash}'" in script_policy
+    assert "'unsafe-inline'" not in script_policy
 
     schema = openapi_response.json()
     assert "/api/v1/users" in schema["paths"]

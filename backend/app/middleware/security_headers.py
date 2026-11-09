@@ -15,7 +15,7 @@ API_CSP = (
 DOCS_CSP = (
     "default-src 'self'; "
     "img-src 'self' data: https://fastapi.tiangolo.com; "
-    "script-src 'self' https://cdn.jsdelivr.net; "
+    "script-src 'self' https://cdn.jsdelivr.net 'sha256-QOOQu4W1oxGqd2nbXbxiA1Di6OHQOLQD+o+G9oWL8YY='; "
     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
     "connect-src 'self'; "
     "frame-ancestors 'none'; "
