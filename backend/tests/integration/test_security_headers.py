@@ -55,3 +55,28 @@ def test_openapi_documents_problem_details_response_media_type():
 
     assert "application/problem+json" in response_schema["content"]
     assert "application/json" not in response_schema["content"]
+
+
+def test_api_docs_are_available_in_production_without_bypassing_auth(
+    client: TestClient,
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "environment", "production")
+
+    docs_response = client.get("/docs")
+    openapi_response = client.get("/openapi.json")
+    redoc_response = client.get("/redoc")
+
+    assert docs_response.status_code == 200
+    assert openapi_response.status_code == 200
+    assert redoc_response.status_code == 200
+
+    schema = openapi_response.json()
+    assert "/api/v1/users" in schema["paths"]
+    assert "/api/v1/vehicles" in schema["paths"]
+    assert schema["paths"]["/api/v1/users"]["get"]["security"]
+    assert "WIALON_TOKEN" not in openapi_response.text
+    assert "ADMIN_PASSWORD" not in openapi_response.text
+
+    assert client.get("/api/v1/users").status_code == 401
+    assert client.get("/api/v1/vehicles").status_code == 401

@@ -11,7 +11,7 @@ Este repositorio corresponde a la prueba técnica de GPS Control. El backend inc
 | Aplicación | <https://gps-control-mu.vercel.app> |
 | API | <https://gps-control-api-yb.onrender.com> |
 | Salud/version (metadata no sensible) | /health y /version (commit y branch de Render, sin secretos) |
-| Documentación API | Disponible solo en desarrollo: `http://localhost:8000/docs` (deshabilitada en producción) |
+| Documentación API | <https://gps-control-api-yb.onrender.com/docs> · <https://gps-control-api-yb.onrender.com/openapi.json> |
 | Repositorio | https://github.com/yarbravo5/gps-control |
 
 Despliegue activo en Neon (PostgreSQL), Render (API Docker) y Vercel (SPA). El frontend consume la API mediante el proxy same-origin `/api` de Vercel y GitHub Actions mantiene Render despierto cada 10 minutos.
@@ -191,7 +191,7 @@ Las rutas frontend separan vistas por feature, y [`httpClient.ts`](frontend/src/
 | SEG-02 Criptografía | Argon2, access token de vida corta, refresh rotatorio en cookies HttpOnly/Secure en producción y HTTPS desplegado. |
 | SEG-03 Inyección | Esquemas Pydantic, SQLAlchemy parametrizado, salida React escapada y saneamiento CSV. |
 | SEG-04 Diseño inseguro | Amenazas y mitigaciones resumidas en la tabla anterior; permisos de mínimo privilegio. |
-| SEG-05 Configuración | CSP, HSTS, X-Content-Type-Options, X-Frame-Options y políticas de Referrer; Swagger deshabilitado en producción. |
+| SEG-05 Configuración | CSP, HSTS, X-Content-Type-Options, X-Frame-Options y políticas de Referrer; Swagger/OpenAPI controlable mediante `API_DOCS_ENABLED`. |
 | SEG-06 Componentes | Lockfiles versionados; `npm audit --offline --audit-level=high` reportó cero vulnerabilidades en esta revisión local. CI ejecuta `npm audit --audit-level=high` y `pip-audit` en cada push a `main`. |
 | SEG-07 Identidad | Límite de login compartido por identidad/origen y bloqueo temporal; contraseñas nuevas con mínimo 12 caracteres, una letra y un número; sesión rotatoria y CSRF. No hay rate limiting global ni consulta a una lista de contraseñas comprometidas. La cuenta de prueba compartida debe desactivarse o rotarse si sigue activa; la cuenta real de evaluación es distinta y el propietario debe validar sus credenciales antes de compartirlas. |
 | SEG-08 Integridad | Dependencias fijadas, CI, DTOs de Wialon validados y mapeo a contratos propios. |
@@ -203,7 +203,7 @@ Las rutas frontend separan vistas por feature, y [`httpClient.ts`](frontend/src/
 
 La paleta central está definida en `frontend/src/styles/globals.css`: rojo `#eb162c` para marca, rojo oscuro `#d51429` y vino `#a81a2b` para acciones/énfasis, gris `#6b6b6b` para secundarios, teal `#1e8c93` para foco y acentos, púrpura pálido `#eee8f2` para fondos y vino oscuro `#751324` para texto destacado. Los fondos claros usan texto oscuro. El cumplimiento de contraste WCAG debe medirse sobre los estados renderizados antes de declararlo; los colores de marca por sí solos no constituyen evidencia de conformidad.
 
-La explicación de jerarquía, estados semánticos, tokens, contraste y decisiones responsive está en [docs/defensa/decisiones-diseno.md](docs/defensa/decisiones-diseno.md). La matriz final de auditoría registra también qué comprobaciones de accesibilidad siguen necesitando revisión manual.
+Los tokens de diseño están en `frontend/src/styles/globals.css`. La auditoría final registra también qué comprobaciones de accesibilidad siguen necesitando revisión manual.
 
 ## Transformación de datos de Wialon
 
@@ -325,6 +325,7 @@ La plantilla completa del backend esta en `backend/.env.example`. Las principale
 | `WIALON_RETRY_ATTEMPTS`, `WIALON_RETRY_BASE_DELAY_SECONDS`, `WIALON_READ_CACHE_TTL_SECONDS` | Reintentos acotados de lecturas y TTL de caché Wialon en memoria. Las escrituras no se reintentan. |
 | `CORS_ORIGINS` | Origenes permitidos, separados por coma. |
 | `ADMIN_EMAIL`, `ADMIN_NAME`, `ADMIN_PASSWORD` | Administrador inicial creado por el seed. |
+| `API_DOCS_ENABLED` | Publica `/docs`, `/redoc` y `/openapi.json` cuando es `true` (predeterminado); permite desactivarlos con `false`. En Render, dejarlo ausente o definirlo como `true` para mantener Swagger disponible. |
 
 En produccion con el proxy same-origin de Vercel se recomienda:
 
@@ -372,7 +373,7 @@ Limitaciones de seguridad conocidas:
 
 ## API
 
-La API se publica bajo `/api/v1`. El enlace Swagger de entrega solo está disponible si el ambiente permite OpenAPI; en producción puede estar deshabilitado por configuración.
+La API se publica bajo `/api/v1`. Swagger UI, ReDoc y OpenAPI son públicos en producción mientras `API_DOCS_ENABLED=true` (predeterminado). La especificación describe endpoints, pero no concede permisos: las rutas protegidas siguen exigiendo JWT y RBAC en el backend.
 
 | Metodo | Ruta | Descripcion |
 | --- | --- | --- |
@@ -408,7 +409,7 @@ La API se publica bajo `/api/v1`. El enlace Swagger de entrega solo está dispon
 | `GET` | `/audit` | Consulta auditoria. |
 | `GET` | `/health` | Healthcheck. |
 
-Los errores HTTP, de validación y del servidor siguen Problem Details (RFC 7807) con `application/problem+json`; los errores 422 incluyen una lista `errors` por campo. La documentación OpenAPI está disponible en `/docs` en desarrollo y se deshabilita en producción. La documentación interactiva completa está en `/docs` cuando el ambiente lo permite.
+Los errores HTTP, de validación y del servidor siguen Problem Details (RFC 7807) con `application/problem+json`; los errores 422 incluyen una lista `errors` por campo. `/docs`, `/redoc` y `/openapi.json` se controlan mediante `API_DOCS_ENABLED`.
 
 ## Pruebas y calidad
 
@@ -474,10 +475,7 @@ El plan gratuito de Render suspende el servicio tras un periodo de inactividad. 
 - Separacion por capas: API, servicios, repositorios, mappers y gateways.
 - Mensajes de error orientados al usuario sin filtrar detalles internos.
 - Proxy same-origin en Vercel para cookies de sesion.
-- Supuestos, límites y decisiones de alcance: [docs/defensa/decisiones-diseno.md](docs/defensa/decisiones-diseno.md).
 - Revisión requisito por requisito: [docs/entrega/auditoria-final.md](docs/entrega/auditoria-final.md).
-- Guía de recorrido del código y preparación para la defensa: [docs/defensa/guia-completa-repositorio.md](docs/defensa/guia-completa-repositorio.md) y [docs/defensa/guion-defensa-tecnica.md](docs/defensa/guion-defensa-tecnica.md).
-- Material de estudio progresivo de ocho bloques: [docs/defensa/plan-de-estudio.md](docs/defensa/plan-de-estudio.md). También hay [preguntas y respuestas](docs/defensa/preguntas-y-respuestas.md), [stack tecnológico explicado](docs/defensa/stack-tecnologico.md) y [historial Git explicado](docs/defensa/historial-git-explicado.md).
 
 ## Uso de inteligencia artificial
 

@@ -51,14 +51,12 @@ PROBLEM_RESPONSES = {
     for code in (400, 401, 403, 404, 409, 422, 429, 500, 502)
 }
 
-is_production = settings.environment.strip().lower() == "production"
-
 app = FastAPI(
     title=settings.app_name,
     version="1.0.0",
-    docs_url=None if is_production else "/docs",
-    redoc_url=None if is_production else "/redoc",
-    openapi_url=None if is_production else "/openapi.json",
+    docs_url="/docs" if settings.api_docs_enabled else None,
+    redoc_url="/redoc" if settings.api_docs_enabled else None,
+    openapi_url="/openapi.json" if settings.api_docs_enabled else None,
     responses=PROBLEM_RESPONSES,
 )
 

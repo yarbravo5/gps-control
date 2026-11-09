@@ -8,6 +8,7 @@ from sqlalchemy.engine import URL, make_url
 class Settings(BaseSettings):
     app_name: str = "GPS Control API"
     environment: str = "development"
+    api_docs_enabled: bool = Field(default=True, validation_alias="API_DOCS_ENABLED")
 
     # Database
     database_url_override: str | None = Field(

@@ -30,6 +30,9 @@ test-results/
 # Deploy
 .vercel/
 
+# Candidate's private defense and study materials
+/docs/defensa/
+
 # IDE
 .vscode/
 .idea/
